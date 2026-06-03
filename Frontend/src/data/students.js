@@ -205,7 +205,30 @@ export const studentsData = [
   }
 ];
 
-export const countriesList = ["Canada", "UK", "USA", "Australia", "Germany", "New Zealand", "Ireland"];
+export const countryList = [
+  "Australia",
+  "Canada",
+  "Germany",
+  "Ireland",
+  "New Zealand",
+  "UK",
+  "USA",
+  "France",
+  "Singapore",
+  "UAE",
+];
 export const intakeList = ["Sep 2024", "Jan 2025", "May 2025", "Aug 2025", "Sep 2025"];
 export const courseList = ["Computer Science", "Engineering", "Business", "Medicine", "Science", "Arts", "Design"];
 export const statusList = ["Active", "In Progress", "Applied", "Visa Approved", "Closed"];
+
+export const yearList = [
+  "2022",
+  "2023",
+  "2024",
+  "2025",
+  "2026",
+  "2027",
+  "2028",
+  "2029",
+  "2030",
+];

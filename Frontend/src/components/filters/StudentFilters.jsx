@@ -1,50 +1,38 @@
-import React, { useState } from 'react';
-import { Filter, Search } from 'lucide-react';
-import {
-  countriesList,
-  intakeList,
-  courseList,
-  statusList
-} from '../../data/students';
+import React, { useState } from "react";
+import { Filter, Search } from "lucide-react";
+import { statusList } from "../../data/students";
+import { yearList } from "../../data/students";
 
-export default function StudentFilters({ onFilter, onReset }) {
+import { countryList } from "../../data/students";
+export default function StudentFilters({ onFilter }) {
   const [filters, setFilters] = useState({
-    search: '',
-    country: '',
-    intake: '',
-    course: '',
-    status: '',
+    search: "",
+    country: "",
+    status: "",
+    year: "",
   });
 
   const handleChange = (key, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
   };
 
   const handleApply = () => onFilter(filters);
 
   return (
-    <div className="bg-white rounded-2xl shadow-card p-5 mb-6 border border-slate-100">
-
+    <div className="bg-white rounded-xl shadow-card pt-2 px-3 pb-2 mb-2 border border-slate-100">
       {/* Heading */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-1 mb-1">
         <Filter size={16} className="text-primary-600" />
-
-        <h3 className="font-semibold text-slate-700 text-sm">
-          Apply Filters
-        </h3>
+        <h3 className="font-semibold text-slate-600 text-sm">Apply Filters</h3>
       </div>
 
       {/* Filter Row */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-
-        {/* Search Keyword */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+        {/* Global Search */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-500">
-            Search Keyword
-          </label>
 
           <div className="relative">
             <Search
@@ -54,72 +42,46 @@ export default function StudentFilters({ onFilter, onReset }) {
 
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search anything..."
               value={filters.search}
-              onChange={e => handleChange('search', e.target.value)}
+              onChange={(e) => handleChange("search", e.target.value)}
               className="input-field w-full pl-9"
             />
           </div>
         </div>
 
-        {/* Country */}
+        {/* Country Filter */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-500">
-            Country
-          </label>
+          <label className="text-xs font-medium text-slate-500">Country</label>
 
-          <select
-            value={filters.country}
-            onChange={e => handleChange('country', e.target.value)}
-            className="input-field w-full"
-          >
-            <option value="">All Countries</option>
+        <select
+          value={filters.country}
+          onChange={(e) => handleChange("country", e.target.value)}
+          className="input-field w-full"
+        >
+          <option value="">All Countries</option>
 
-            {countriesList.map(c => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          {countryList.map((country) => (
+            <option key={country} value={country}>
+              {country}
+            </option>
+          ))}
+        </select>
         </div>
-
-        {/* Intake */}
+        {/* Intake Date */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-500">
-            Intake
-          </label>
+          <label className="text-xs font-medium text-slate-500">Year</label>
 
           <select
-            value={filters.intake}
-            onChange={e => handleChange('intake', e.target.value)}
+            value={filters.year}
+            onChange={(e) => handleChange("year", e.target.value)}
             className="input-field w-full"
           >
-            <option value="">All Intakes</option>
+            <option value="">All Years</option>
 
-            {intakeList.map(i => (
-              <option key={i} value={i}>
-                {i}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Course */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-500">
-            Course
-          </label>
-
-          <select
-            value={filters.course}
-            onChange={e => handleChange('course', e.target.value)}
-            className="input-field w-full"
-          >
-            <option value="">All Courses</option>
-
-            {courseList.map(c => (
-              <option key={c} value={c}>
-                {c}
+            {yearList.map((year) => (
+              <option key={year} value={year}>
+                {year}
               </option>
             ))}
           </select>
@@ -127,18 +89,15 @@ export default function StudentFilters({ onFilter, onReset }) {
 
         {/* Status */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-500">
-            Status
-          </label>
+          <label className="text-xs font-medium text-slate-500">Status</label>
 
           <select
             value={filters.status}
-            onChange={e => handleChange('status', e.target.value)}
+            onChange={(e) => handleChange("status", e.target.value)}
             className="input-field w-full"
           >
             <option value="">All Status</option>
-
-            {statusList.map(s => (
+            {statusList.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -154,7 +113,6 @@ export default function StudentFilters({ onFilter, onReset }) {
           <Filter size={14} />
           Apply Filter
         </button>
-
       </div>
     </div>
   );

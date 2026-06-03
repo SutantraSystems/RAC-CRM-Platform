@@ -25,7 +25,7 @@ export const leadsData = {
 
 export const dashboardStats = {
   totalLeads: 1250,
-  activeStudents: 860,
+  activeStudents: 2,
   applicationsSubmitted: 430,
   offersReceived: 210,
   visaApproved: 180,

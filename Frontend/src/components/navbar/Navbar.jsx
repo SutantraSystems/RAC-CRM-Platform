@@ -42,18 +42,18 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
       </div>
 
       {/* Search bar - desktop */}
-      <div className="hidden md:flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-2 w-64 border border-slate-100 focus-within:border-primary-300 focus-within:bg-white transition-all">
+      {/* <div className="hidden md:flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-2 w-64 border border-slate-100 focus-within:border-primary-300 focus-within:bg-white transition-all">
         <Search size={16} className="text-slate-400" />
         <input
           type="text"
           placeholder="Search students, leads..."
           className="bg-transparent text-sm text-slate-600 placeholder-slate-400 outline-none w-full"
         />
-      </div>
+      </div> */}
 
       <div className="flex items-center gap-2" ref={dropdownRef}>
         {/* Notifications */}
-        <div className="relative">
+        {/* <div className="relative">
           <button
             onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
             className="p-2 rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-colors relative"
@@ -78,7 +78,7 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Settings */}
         {/* <button className="p-2 rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-colors">
