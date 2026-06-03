@@ -76,6 +76,7 @@ WSGI_APPLICATION = 'Backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+#This project uses PostgreSQL as the database. Make sure to install psycopg2 or psycopg2-binary package to connect Django with PostgreSQL.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -124,7 +125,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-
+# Connection settings for CORS (Cross-Origin Resource Sharing) to allow the frontend application to communicate with the backend API without issues.
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]

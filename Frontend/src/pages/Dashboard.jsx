@@ -1,42 +1,117 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  Users, Target, FileText, Award, ShieldCheck,
-  DollarSign, Clock, AlertCircle, TrendingUp, Handshake
-} from 'lucide-react';
-import KpiCard from '../components/cards/KpiCard';
-import { StudentGrowthChart, RevenueChart, CountryPieChart } from '../components/charts/Charts';
-import { dashboardStats, studentGrowthData, revenueData, countryData, applicationsData } from '../data/mockData';
-import StudentList from './StudentList';
-
+  Users,
+  Target,
+  FileText,
+  Award,
+  ShieldCheck,
+  DollarSign,
+  Clock,
+  AlertCircle,
+  TrendingUp,
+  Handshake,
+} from "lucide-react";
+import KpiCard from "../components/cards/KpiCard";
+import {
+  StudentGrowthChart,
+  RevenueChart,
+  CountryPieChart,
+} from "../components/charts/Charts";
+import {
+  dashboardStats,
+  studentGrowthData,
+  revenueData,
+  countryData,
+  applicationsData,
+} from "../data/mockData";
+import axios from "axios";
+import { countryList } from "../data/students";
+import { yearList } from "../data/students";
+import { statusList } from "../data/students";
 const kpiConfig = [
-  { key: 'totalLeads', title: 'Total Leads', icon: Target, trend: 'up', trendValue: '12%' },
-  { key: 'activeStudents', title: 'Active Students', icon: Users, trend: 'up', trendValue: '8%' },
-  { key: 'applicationsSubmitted', title: 'Applications Submitted', icon: FileText, trend: 'up', trendValue: '15%' },
-  { key: 'offersReceived', title: 'Offers Received', icon: Award, trend: 'up', trendValue: '5%' },
-  { key: 'visaApproved', title: 'Visa Approved', icon: ShieldCheck, trend: 'up', trendValue: '22%' },
-  { key: 'pendingDocuments', title: 'Pending Documents', icon: Clock, trend: 'down', trendValue: '3%' },
-  { key: 'upcomingDeadlines', title: 'Upcoming Deadlines', icon: AlertCircle, trend: 'up', trendValue: '4%' },
-  { key: 'revenueMetrics', title: 'Revenue Metrics', icon: DollarSign, trend: 'up', trendValue: '18%' },
-  { key: 'commission', title: 'Commission', icon: Handshake, trend: 'up', trendValue: '9%' },
+  {
+    key: "totalLeads",
+    title: "Total Leads",
+    icon: Target,
+    trend: "up",
+    trendValue: "12%",
+  },
+  {
+    key: "activeStudents",
+    title: "Active Students",
+    icon: Users,
+    trend: "up",
+    trendValue: "8%",
+  },
+  {
+    key: "applicationsSubmitted",
+    title: "Applications Submitted",
+    icon: FileText,
+    trend: "up",
+    trendValue: "15%",
+  },
+  // { key: 'offersReceived', title: 'Offers Received', icon: Award, trend: 'up', trendValue: '5%' },
+  {
+    key: "visaApproved",
+    title: "Visa Approved",
+    icon: ShieldCheck,
+    trend: "up",
+    trendValue: "22%",
+  },
+  // { key: 'pendingDocuments', title: 'Pending Documents', icon: Clock, trend: 'down', trendValue: '3%' },
+  // { key: 'upcomingDeadlines', title: 'Upcoming Deadlines', icon: AlertCircle, trend: 'up', trendValue: '4%' },
+  // { key: 'revenueMetrics', title: 'Revenue Metrics', icon: DollarSign, trend: 'up', trendValue: '18%' },
+  // { key: 'commission', title: 'Commission', icon: Handshake, trend: 'up', trendValue: '9%' },
 ];
 
 const appStatusColors = {
-  'Offer Received': 'bg-green-100 text-green-700',
-  'Under Review': 'bg-yellow-100 text-yellow-700',
-  'Conditional Offer': 'bg-blue-100 text-blue-700',
-  'Visa Approved': 'bg-purple-100 text-purple-700',
-  'Applied': 'bg-slate-100 text-slate-700',
+  "Offer Received": "bg-green-100 text-green-700",
+  "Under Review": "bg-yellow-100 text-yellow-700",
+  "Conditional Offer": "bg-blue-100 text-blue-700",
+  "Visa Approved": "bg-purple-100 text-purple-700",
+  Applied: "bg-slate-100 text-slate-700",
 };
 
 export default function Dashboard() {
-  const [dateFilters, setDateFilters] = useState({ startDate: '', endDate: '', intake: '', year: '', country: '' });
+  const [dateFilters, setDateFilters] = useState({
+    // startDate: "",
+    // endDate: "",
+    year: "",
+    country: "",
+    status: "",
+  });
+  const [studentCount, setStudentCount] = useState(0);
+
+  const fetchStudentCount = async () => {
+    try {
+      const params = {};
+
+      if (dateFilters.country) params.country = dateFilters.country;
+
+      if (dateFilters.year) params.year = dateFilters.year;
+
+      if (dateFilters.status) params.status = dateFilters.status;
+
+      const res = await axios.get("http://127.0.0.1:8000/api/students-count/", {
+        params,
+      });
+
+      setStudentCount(res.data.total_students);
+    } catch (err) {
+      console.log("Error fetching student count", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudentCount();
+  }, []);
 
   return (
     <div className="space-y-6">
       {/* Date filter bar */}
       <div className="bg-white rounded-2xl shadow-card p-5 border border-slate-100">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1">
+          {/* <div className="flex flex-col gap-1">
             <label className="text-xs text-slate-400 font-medium">Start Date</label>
             <input type="date" className="input-field" value={dateFilters.startDate}
               onChange={e => setDateFilters(p => ({ ...p, startDate: e.target.value }))} />
@@ -45,23 +120,84 @@ export default function Dashboard() {
             <label className="text-xs text-slate-400 font-medium">End Date</label>
             <input type="date" className="input-field" value={dateFilters.endDate}
               onChange={e => setDateFilters(p => ({ ...p, endDate: e.target.value }))} />
-          </div>
-          <select className="input-field self-end" value={dateFilters.intake}
-            onChange={e => setDateFilters(p => ({ ...p, intake: e.target.value }))}>
+          </div> */}
+
+          {/* <select
+            className="input-field self-end"
+            value={dateFilters.intake}
+            onChange={(e) =>
+              setDateFilters((prev) => ({
+                ...prev,
+                intake: e.target.value,
+              }))
+            }
+          >
             <option value="">Intake</option>
-            {['Sep 2024', 'Jan 2025', 'May 2025', 'Aug 2025'].map(i => <option key={i}>{i}</option>)}
-          </select>
-          <select className="input-field self-end" value={dateFilters.year}
-            onChange={e => setDateFilters(p => ({ ...p, year: e.target.value }))}>
-            <option value="">Year</option>
-            {['2023', '2024', '2025'].map(y => <option key={y}>{y}</option>)}
-          </select>
-          <select className="input-field self-end" value={dateFilters.country}
-            onChange={e => setDateFilters(p => ({ ...p, country: e.target.value }))}>
+
+            {intakeList.map((intake) => (
+              <option key={intake} value={intake}>
+                {intake}
+              </option>
+            ))}
+          </select> */}
+          <select
+            className="input-field self-end"
+            value={dateFilters.country}
+            onChange={(e) =>
+              setDateFilters((prev) => ({
+                ...prev,
+                country: e.target.value,
+              }))
+            }
+          >
             <option value="">Countries</option>
-            {['Canada', 'UK', 'USA', 'Australia', 'Germany'].map(c => <option key={c}>{c}</option>)}
+
+            {countryList.map((country) => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
           </select>
-          <button className="btn-primary self-end">Apply Filter</button>
+          <select
+            className="input-field self-end"
+            value={dateFilters.year}
+            onChange={(e) =>
+              setDateFilters((prev) => ({
+                ...prev,
+                year: e.target.value,
+              }))
+            }
+          >
+            <option value="">Year</option>
+
+            {yearList.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="input-field self-end"
+            value={dateFilters.status}
+            onChange={(e) =>
+              setDateFilters((prev) => ({
+                ...prev,
+                status: e.target.value,
+              }))
+            }
+          >
+            <option value="">Status</option>
+
+            {statusList.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+          <button className="btn-primary self-end" onClick={fetchStudentCount}>
+            Apply Filter
+          </button>
         </div>
       </div>
 
@@ -71,7 +207,9 @@ export default function Dashboard() {
           <KpiCard
             key={kpi.key}
             title={kpi.title}
-            value={dashboardStats[kpi.key]}
+            value={
+              kpi.key === "totalLeads" ? studentCount : dashboardStats[kpi.key]
+            }
             icon={kpi.icon}
             // trend={kpi.trend}
             // trendValue={kpi.trendValue}
@@ -102,11 +240,6 @@ export default function Dashboard() {
           <CountryPieChart data={countryData} />
         </div>
       </div> */}
-
-
-      <div className="mt-6">
-  <StudentList />
-</div>
 
       {/* Revenue Chart + Recent Applications */}
       {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

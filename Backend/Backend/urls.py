@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 
+#api urls is the url to connect the backend with frontend. It is defined in CRM/urls.py file. All the urls defined in CRM/urls.py will be prefixed with 'api/'.
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('CRM.urls')),

@@ -7,15 +7,20 @@
     box-sizing: border-box;
   }
   body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: #FAF8F5;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    background-color: #faf8f5;
     color: #1a2332;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
   }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Sora', sans-serif;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Sora", sans-serif;
   }
 }
 
@@ -56,10 +61,20 @@
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #c5d4ec; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #2c5aa9; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c5d4ec;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2c5aa9;
+}
 
 /* Sidebar transition */
 .sidebar-transition {
@@ -78,5 +93,5 @@
 .recharts-tooltip-wrapper .recharts-default-tooltip {
   border-radius: 12px !important;
   border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
 }

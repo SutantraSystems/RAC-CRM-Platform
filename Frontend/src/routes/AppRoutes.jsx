@@ -1,8 +1,9 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Dashboard from '../pages/Dashboard';
-import Students from '../pages/Students';
-import Leads from '../pages/Leads';
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import Dashboard from "../pages/Dashboard";
+import Students from "../pages/Students";
+import Leads from "../pages/Leads";
+import ImportStudents from "../pages/ImportStudents";
 // import Analytics from '../pages/Analytics';
 // import Applications from '../pages/Applications';
 // import Universities from '../pages/Universities';
@@ -14,10 +15,11 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/students" element={<Students />} />
-      <Route path="/leads" element={<Leads />} />
+      {/* <Route path="/leads" element={<Leads />} /> */}
+      <Route path="/importstudents" element={<ImportStudents />} />
       {/* <Route path="/applications" element={<Applications />} /> */}
       {/* <Route path="/universities" element={<Universities />} /> */}
-      
+
       {/* <Route path="/finance" element={<Placeholder title="Finance & Revenue" />} />
       <Route path="/reports" element={<Analytics />} />
       <Route path="/settings" element={<Placeholder title="Settings" />} />
