@@ -184,22 +184,6 @@ http://localhost:5173
 
 ---
 
-# Application Architecture
 
-```text
-                    User
-                     │
-                     ▼
-              React Frontend
-              localhost:5173
-                     │
-                     │ REST API
-                     ▼
-              Django Backend
-              localhost:8000
-                     │
-                     ▼
-                PostgreSQL
-```
 
 
