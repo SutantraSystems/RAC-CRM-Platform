@@ -10,6 +10,8 @@ const pageTitles = {
   "/students": "Students",
   "/leads": "Leads Pipeline",
   "/importstudents": "Import Students",
+
+  // future integration
   // '/applications': 'Applications',
   // '/universities': 'Universities',
   // '/finance': 'Finance & Revenue',

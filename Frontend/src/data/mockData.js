@@ -24,15 +24,15 @@ export const leadsData = {
 };
 
 export const dashboardStats = {
-  totalLeads: 1250,
-  activeStudents: 2,
-  applicationsSubmitted: 430,
-  offersReceived: 210,
-  visaApproved: 180,
-  pendingDocuments: 95,
-  upcomingDeadlines: 34,
-  revenueMetrics: "$45K",
-  commission: "$12K",
+  totalLeads: null,
+  activeStudents: null,
+  applicationsSubmitted: null,
+  offersReceived: null,
+  visaApproved: null,
+  pendingDocuments: null,
+  upcomingDeadlines: null,
+  revenueMetrics: null,
+  commission: null,
 };
 
 export const revenueData = [

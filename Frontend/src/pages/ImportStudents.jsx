@@ -9,8 +9,8 @@ export default function ImportStudents() {
   const inputRef = useRef();
 
   const handleFile = (selectedFiles) => {
-    
-  
+
+
     setFiles(Array.from(selectedFiles));
     setResult(null);
   };
@@ -27,8 +27,8 @@ export default function ImportStudents() {
 
       alert(
         err.response?.data?.error ||
-          err.response?.data?.detail ||
-          "Upload failed",
+        err.response?.data?.detail ||
+        "Upload failed",
       );
     }
     setLoading(false);

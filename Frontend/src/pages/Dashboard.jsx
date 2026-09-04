@@ -3,28 +3,31 @@ import {
   Users,
   Target,
   FileText,
-  Award,
   ShieldCheck,
+  Award,
   DollarSign,
   Clock,
   AlertCircle,
   TrendingUp,
   Handshake,
-} from "lucide-react";
+}
+  from "lucide-react";
 import KpiCard from "../components/cards/KpiCard";
 import {
   StudentGrowthChart,
   RevenueChart,
   CountryPieChart,
-} from "../components/charts/Charts";
+}
+  from "../components/charts/Charts";
 import {
   dashboardStats,
   studentGrowthData,
   revenueData,
   countryData,
   applicationsData,
-} from "../data/mockData";
-import axios from "axios";
+}
+  from "../data/mockData";
+import { getStudentCount } from "../services/studentApi";
 import { countryList } from "../data/students";
 import { yearList } from "../data/students";
 import { statusList } from "../data/students";
@@ -50,7 +53,6 @@ const kpiConfig = [
     trend: "up",
     trendValue: "15%",
   },
-  // { key: 'offersReceived', title: 'Offers Received', icon: Award, trend: 'up', trendValue: '5%' },
   {
     key: "visaApproved",
     title: "Visa Approved",
@@ -58,6 +60,9 @@ const kpiConfig = [
     trend: "up",
     trendValue: "22%",
   },
+
+  //future integration
+  // { key: 'offersReceived', title: 'Offers Received', icon: Award, trend: 'up', trendValue: '5%' },
   // { key: 'pendingDocuments', title: 'Pending Documents', icon: Clock, trend: 'down', trendValue: '3%' },
   // { key: 'upcomingDeadlines', title: 'Upcoming Deadlines', icon: AlertCircle, trend: 'up', trendValue: '4%' },
   // { key: 'revenueMetrics', title: 'Revenue Metrics', icon: DollarSign, trend: 'up', trendValue: '18%' },
@@ -82,25 +87,29 @@ export default function Dashboard() {
   });
   const [studentCount, setStudentCount] = useState(0);
 
-  const fetchStudentCount = async () => {
-    try {
-      const params = {};
+const fetchStudentCount = async () => {
+  try {
+    const params = {};
 
-      if (dateFilters.country) params.country = dateFilters.country;
-
-      if (dateFilters.year) params.year = dateFilters.year;
-
-      if (dateFilters.status) params.status = dateFilters.status;
-
-      const res = await axios.get("http://127.0.0.1:8000/api/students-count/", {
-        params,
-      });
-
-      setStudentCount(res.data.total_students);
-    } catch (err) {
-      console.log("Error fetching student count", err);
+    if (dateFilters.country) {
+      params.country = dateFilters.country;
     }
-  };
+
+    if (dateFilters.year) {
+      params.year = dateFilters.year;
+    }
+
+    if (dateFilters.status) {
+      params.status = dateFilters.status;
+    }
+
+    const res = await getStudentCount(params);
+
+    setStudentCount(res.data.total_students);
+  } catch (err) {
+    console.log("Error fetching student count", err);
+  }
+};
 
   useEffect(() => {
     fetchStudentCount();
@@ -111,6 +120,7 @@ export default function Dashboard() {
       {/* Date filter bar */}
       <div className="bg-white rounded-2xl shadow-card p-5 border border-slate-100">
         <div className="flex flex-wrap items-end gap-3">
+          {/* // Future integration  */}
           {/* <div className="flex flex-col gap-1">
             <label className="text-xs text-slate-400 font-medium">Start Date</label>
             <input type="date" className="input-field" value={dateFilters.startDate}
@@ -177,7 +187,8 @@ export default function Dashboard() {
             ))}
           </select>
 
-          <select
+          {/* future integration */}
+          {/* <select
             className="input-field self-end"
             value={dateFilters.status}
             onChange={(e) =>
@@ -194,7 +205,7 @@ export default function Dashboard() {
                 {status}
               </option>
             ))}
-          </select>
+          </select> */}
           <button className="btn-primary self-end" onClick={fetchStudentCount}>
             Apply Filter
           </button>
@@ -218,6 +229,7 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* future integration */}
       {/* Charts Row */}
       {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-card p-5 border border-slate-100">

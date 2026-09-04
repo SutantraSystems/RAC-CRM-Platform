@@ -41,6 +41,7 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
         </div>
       </div>
 
+      {/* // future integration */}
       {/* Search bar - desktop */}
       {/* <div className="hidden md:flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-2 w-64 border border-slate-100 focus-within:border-primary-300 focus-within:bg-white transition-all">
         <Search size={16} className="text-slate-400" />

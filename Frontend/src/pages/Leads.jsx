@@ -47,7 +47,8 @@ export default function Leads() {
           </button>
         </div>
       </div>
-
+      
+      {/* future integration */}
       {/* Pipeline label */}
       {/* <div className="flex items-center gap-2">
         <Target size={16} className="text-primary-600" />

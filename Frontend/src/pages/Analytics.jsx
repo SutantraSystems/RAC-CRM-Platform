@@ -75,13 +75,13 @@ export default function Analytics() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-slate-100 rounded-full h-1.5 w-20">
-                        <div className="h-1.5 rounded-full" style={{ width: `${Math.round(60 + Math.random()*30)}%`, background: c.color }}></div>
+                        <div className="h-1.5 rounded-full" style={{ width: `${Math.round(60 + Math.random() * 30)}%`, background: c.color }}></div>
                       </div>
-                      <span className="text-xs text-slate-500">{Math.round(60 + i*4)}%</span>
+                      <span className="text-xs text-slate-500">{Math.round(60 + i * 4)}%</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{Math.round(c.value / 1275 * 100)}%</td>
-                  <td className="px-4 py-3 text-green-600 font-semibold text-xs">↑ {Math.round(5 + i*3)}%</td>
+                  <td className="px-4 py-3 text-green-600 font-semibold text-xs">↑ {Math.round(5 + i * 3)}%</td>
                 </tr>
               ))}
             </tbody>

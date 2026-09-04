@@ -18,7 +18,6 @@ class RACStudent(models.Model):
     # MOBILE NUMBER
     mobile_number = models.CharField(
         max_length=15,
-        unique=True,
         db_index=True,
         null=True,
         blank=True
@@ -26,7 +25,6 @@ class RACStudent(models.Model):
 
     # EMAIL
     email = models.EmailField(
-        unique=True,
         db_index=True,
         null=True,
         blank=True
@@ -35,7 +33,6 @@ class RACStudent(models.Model):
     # PASSPORT DETAILS
     passport_number = models.CharField(
         max_length=50,
-        unique=True,
         null=True,
         blank=True,
         db_index=True

@@ -10,8 +10,10 @@ import logo from '../../assets/RAC.png';
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: Users, label: 'Students', path: '/students' },
-  // { icon: Target, label: 'Leads', path: '/leads' },
   { icon: FileText, label: 'Import Students', path: '/importstudents' },
+  
+  // future integration
+  // { icon: Target, label: 'Leads', path: '/leads' },
   // { icon: FileText, label: 'Applications', path: '/applications' },
   // { icon: GraduationCap, label: 'Universities', path: '/universities' },
   // { icon: BookOpen, label: 'Learning Resources', path: '/learning' },

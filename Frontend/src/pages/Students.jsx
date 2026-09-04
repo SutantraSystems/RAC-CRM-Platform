@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-
-import StudentFilters from "../components/filters/StudentFilters";
-import StudentsTable from "../components/tables/StudentsTable";
-import StudentForm from "../components/forms/StudentForm";
-
 import {
+  getStudents,
   createStudent,
   updateStudent,
   deleteStudent,
 } from "../services/studentApi";
+import StudentFilters from "../components/filters/StudentFilters";
+import StudentsTable from "../components/tables/StudentsTable";
+import StudentForm from "../components/forms/StudentForm";
 
 export default function Students() {
   const [students, setStudents] = useState([]);
@@ -24,45 +22,40 @@ export default function Students() {
   // filters state
   const [filters, setFilters] = useState({});
 
-  //  Fetch students (supports pagination + filters)
   const fetchStudents = async (pageNumber = 1, filtersData = {}) => {
-    try {
-      const params = new URLSearchParams();
+  try {
+    const params = {
+      page: pageNumber,
+    };
 
-      // pagination
-      params.append("page", pageNumber);
-
-      // filters
-      if (filtersData.search) {
-        params.append("search", filtersData.search);
-      }
-
-      if (filtersData.country) {
-        params.append("country", filtersData.country);
-      }
-
-      if (filtersData.status) {
-        params.append("status", filtersData.status);
-      }
-
-      if (filtersData.year) {
-        params.append("year", filtersData.year);
-      }
-
-      const response = await axios.get(
-        `http://127.0.0.1:8000/api/students/?${params.toString()}`,
-      );
-
-      console.log("API Response:", response.data);
-
-      setStudents(response.data.data);
-      setTotal(response.data.total);
-      setPage(response.data.page);
-      setTotalPages(response.data.total_pages);
-    } catch (error) {
-      console.error("Error loading students:", error);
+    if (filtersData.search) {
+      params.search = filtersData.search;
     }
-  };
+
+    if (filtersData.country) {
+      params.country = filtersData.country;
+    }
+
+    if (filtersData.status) {
+      params.status = filtersData.status;
+    }
+
+    if (filtersData.year) {
+      params.year = filtersData.year;
+    }
+
+    const response = await getStudents(params);
+
+    console.log("API Response:", response.data);
+
+    setStudents(response.data.data);
+    setTotal(response.data.total);
+    setPage(response.data.page);
+    setTotalPages(response.data.total_pages);
+  } catch (error) {
+    console.error("Error loading students:", error);
+  }
+};
 
   //  Auto refetch when page OR filters change
   useEffect(() => {
@@ -72,7 +65,7 @@ export default function Students() {
   // Handle filter apply
   const handleFilter = (newFilters) => {
     setFilters(newFilters);
-    setPage(1); 
+    setPage(1);
   };
 
   //  Handle reset filters
