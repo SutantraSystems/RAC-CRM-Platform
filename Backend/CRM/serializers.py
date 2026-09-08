@@ -1,32 +1,45 @@
 from rest_framework import serializers
+
+from .deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
 from .models import RACStudent
 
-# validates the field to be optional and allow null
+
 class RACStudentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RACStudent
         fields = "__all__"
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "dedup_hash"]
+        extra_kwargs = {
+            field: {"required": False, "allow_null": True}
+            for field in DUPLICATE_CHECK_FIELDS
+        }
 
-    extra_kwargs = {
-        "full_name": {"required": False, "allow_null": True},
-        "dob": {"required": False, "allow_null": True},
-        "mobile_number": {"required": False, "allow_null": True},
-        "email": {"required": False, "allow_null": True},
-        "passport_number": {"required": False, "allow_null": True},
-        "academic_details": {"required": False, "allow_null": True},
-        "test_score": {"required": False, "allow_null": True},
-        "preferred_country": {"required": False, "allow_null": True},
-        "intake_date": {"required": False, "allow_null": True},
-        "budget": {"required": False, "allow_null": True},
-        "work_experience": {"required": False, "allow_null": True},     
-        "address": {"required": False, "allow_null": True},
-        "parent_name": {"required": False, "allow_null": True},
-    }
+    def validate(self, attrs):
+        
+        data = {}
+        for field in DUPLICATE_CHECK_FIELDS:
+            if field in attrs:
+                data[field] = attrs[field]
+            elif self.instance is not None:
+                data[field] = getattr(self.instance, field)
+            else:
+                data[field] = None
+
+        dedup_hash = build_dedup_hash(data)
+
+        duplicate_query = RACStudent.objects.filter(dedup_hash=dedup_hash)
+        if self.instance is not None:
+            duplicate_query = duplicate_query.exclude(pk=self.instance.pk)
+
+        if duplicate_query.exists():
+            raise serializers.ValidationError({
+                "duplicate": "A student with the same details already exists."
+            })
+
+        return attrs
 
 
-# Views the student data in list
 class RACStudentListSerializer(serializers.ModelSerializer):
 
     class Meta:

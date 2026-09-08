@@ -53,6 +53,7 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
       </div> */}
 
       <div className="flex items-center gap-2" ref={dropdownRef}>
+        {/* future integrations */}
         {/* Notifications */}
         {/* <div className="relative">
           <button

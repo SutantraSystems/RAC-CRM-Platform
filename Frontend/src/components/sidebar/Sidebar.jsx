@@ -94,11 +94,12 @@ export default function Sidebar({ collapsed, onToggle }) {
       </nav>
 
       {/* Footer */}
-      {!collapsed && (
+      {/* // future integration */}
+      {/* {!collapsed && (
         <div className="px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
           &copy; 2024 RAC CRM
         </div>
-      )}
+      )} */}
     </aside>
   );
 }
