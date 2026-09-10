@@ -9,7 +9,7 @@ class RACStudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = RACStudent
         fields = "__all__"
-        read_only_fields = ["id", "created_at", "updated_at", "dedup_hash"]
+        read_only_fields = ["id", "created_at", "updated_at", "dedup_hash","created_by"]
         extra_kwargs = {
             field: {"required": False, "allow_null": True}
             for field in DUPLICATE_CHECK_FIELDS

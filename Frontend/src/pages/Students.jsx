@@ -8,6 +8,22 @@ import {
 import StudentFilters from "../components/filters/StudentFilters";
 import StudentsTable from "../components/tables/StudentsTable";
 import StudentForm from "../components/forms/StudentForm";
+import Toast from "../components/ui/Toast";
+
+const getErrorMessage = (data, fallback) => {
+  if (!data) return fallback;
+  if (typeof data.detail === "string") return data.detail;
+
+  const firstKey = Object.keys(data)[0];
+  if (firstKey) {
+    const value = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
+    if (typeof value === "string") {
+      return firstKey === "non_field_errors" ? value : `${firstKey}: ${value}`;
+    }
+  }
+
+  return fallback;
+};
 
 export default function Students() {
   const [students, setStudents] = useState([]);
@@ -18,6 +34,7 @@ export default function Students() {
 
   const [showForm, setShowForm] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [toast, setToast] = useState(null);
 
   // filters state
   const [filters, setFilters] = useState({});
@@ -100,12 +117,25 @@ export default function Students() {
       setShowForm(false);
 
       await fetchStudents(page, filters);
+
+      setToast({
+        type: "success",
+        message: selectedStudent
+          ? "Student updated successfully!"
+          : "Student added successfully!",
+      });
     } catch (error) {
       console.error("Save failed:", error);
 
       console.log("Backend Response:", error.response?.data);
 
-      alert(JSON.stringify(error.response?.data, null, 2));
+      setToast({
+        type: "error",
+        message: getErrorMessage(
+          error.response?.data,
+          "Failed to save student. Please check the form and try again."
+        ),
+      });
     }
   };
 
@@ -120,14 +150,30 @@ export default function Students() {
     try {
       await deleteStudent(id);
       fetchStudents(page, filters);
+
+      setToast({
+        type: "success",
+        message: "Student deleted successfully.",
+      });
     } catch (error) {
       console.error("Delete failed:", error);
-      alert("Failed to delete student");
+      setToast({
+        type: "error",
+        message: "Failed to delete student.",
+      });
     }
   };
 
   return (
     <div className="space-y-0">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <StudentFilters onFilter={handleFilter} onReset={handleReset} />
 
       {/* Students Table */}

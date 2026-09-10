@@ -1,34 +1,32 @@
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-const STUDENTS_URL = `${API_URL}/students`;
+const STUDENTS_URL = "/students";
 
 // Get students with pagination and filters
 export const getStudents = (params = {}) => {
-  return axios.get(`${STUDENTS_URL}/`, {
+  return axiosInstance.get(`${STUDENTS_URL}/`, {
     params,
   });
 };
 
 // Get single student
 export const getStudentById = (id) => {
-  return axios.get(`${STUDENTS_URL}/${id}/`);
+  return axiosInstance.get(`${STUDENTS_URL}/${id}/`);
 };
 
 // Create student
 export const createStudent = (studentData) => {
-  return axios.post(`${STUDENTS_URL}/`, studentData);
+  return axiosInstance.post(`${STUDENTS_URL}/`, studentData);
 };
 
 // Update student
 export const updateStudent = (id, studentData) => {
-  return axios.put(`${STUDENTS_URL}/${id}/`, studentData);
+  return axiosInstance.put(`${STUDENTS_URL}/${id}/`, studentData);
 };
 
 // Delete student
 export const deleteStudent = (id) => {
-  return axios.delete(`${STUDENTS_URL}/${id}/`);
+  return axiosInstance.delete(`${STUDENTS_URL}/${id}/`);
 };
 
 // Upload Excel files
@@ -39,8 +37,8 @@ export const uploadStudentsExcel = (files) => {
     formData.append("files", file);
   });
 
-  return axios.post(
-    `${API_URL}/upload-students/`,
+  return axiosInstance.post(
+    `${STUDENTS_URL}/upload/`,
     formData,
     {
       headers: {
@@ -52,7 +50,7 @@ export const uploadStudentsExcel = (files) => {
 
 // Get student count
 export const getStudentCount = (params = {}) => {
-  return axios.get(`${API_URL}/students-count/`, {
+  return axiosInstance.get(`${STUDENTS_URL}/count/`, {
     params,
   });
 };

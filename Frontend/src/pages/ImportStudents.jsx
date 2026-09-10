@@ -1,16 +1,16 @@
 import React, { useState, useRef } from "react";
 import { Upload, FileSpreadsheet } from "lucide-react";
 import { uploadStudentsExcel } from "../services/studentApi";
+import Toast from "../components/ui/Toast";
 
 export default function ImportStudents() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [toast, setToast] = useState(null);
   const inputRef = useRef();
 
   const handleFile = (selectedFiles) => {
-
-
     setFiles(Array.from(selectedFiles));
     setResult(null);
   };
@@ -22,20 +22,35 @@ export default function ImportStudents() {
     try {
       const res = await uploadStudentsExcel(files);
       setResult(res.data);
+
+      setToast({
+        type: "success",
+        message: "Students imported successfully!",
+      });
     } catch (err) {
       console.error(err);
 
-      alert(
-        err.response?.data?.error ||
-        err.response?.data?.detail ||
-        "Upload failed",
-      );
+      setToast({
+        type: "error",
+        message:
+          err.response?.data?.error ||
+          err.response?.data?.detail ||
+          "Upload failed",
+      });
     }
     setLoading(false);
   };
 
   return (
     <div className="space-y-6">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* HEADER CARD */}
       <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
         <div className="flex items-center gap-3 mb-4">

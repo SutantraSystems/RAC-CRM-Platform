@@ -54,19 +54,19 @@ export default function StudentFilters({ onFilter }) {
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-500">Country</label>
 
-        <select
-          value={filters.country}
-          onChange={(e) => handleChange("country", e.target.value)}
-          className="input-field w-full"
-        >
-          <option value="">All Countries</option>
+          <select
+            value={filters.country}
+            onChange={(e) => handleChange("country", e.target.value)}
+            className="input-field w-full"
+          >
+            <option value="">All Countries</option>
 
-          {countryList.map((country) => (
-            <option key={country} value={country}>
-              {country}
-            </option>
-          ))}
-        </select>
+            {countryList.map((country) => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </select>
         </div>
         {/* Intake Date */}
         <div className="flex flex-col gap-1">

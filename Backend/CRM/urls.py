@@ -13,16 +13,15 @@ router.register(
 )
 
 urlpatterns = [
+    path("students/count/", student_count),
+
+    # Route for uploading student data in bulk via an API endpoint.
+    path("students/upload/", UploadStudentsAPIView.as_view(), name="upload-students"),    
+    
     # Includes the automatically generated routes from the router for the student CRUD operations.
     path("", include(router.urls)),
-    # Route for uploading student data in bulk via an API endpoint.
-    path(
-        "upload-students/",
-        UploadStudentsAPIView.as_view(),
-        name="upload-students"
-    ),
-    # Route for getting the count of students in the database.
-     path("students-count/", student_count),  
+   
+    
 ]
 
 

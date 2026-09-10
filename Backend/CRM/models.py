@@ -81,6 +81,11 @@ class RACStudent(models.Model):
         null=True,
         blank=True,
     )
+    created_by = models.EmailField(
+        null=True,
+        blank=True,
+        help_text="Email of the logged-in user who created/uploaded this record.",
+    )
 
     dedup_hash = models.CharField(
         max_length=64,

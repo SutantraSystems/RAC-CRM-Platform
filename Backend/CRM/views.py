@@ -1,80 +1,3 @@
-from rest_framework import viewsets, status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from .models import RACStudent
-from .serializers import RACStudentSerializer, RACStudentListSerializer
-from .pagination import StandardPagination
-import pandas as pd
-from django.db.models import Q
-from datetime import datetime
-
-class RACStudentViewSet(viewsets.ModelViewSet):
-    queryset = RACStudent.objects.all().order_by('-created_at')
-    serializer_class = RACStudentSerializer
-    pagination_class = StandardPagination
-
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return RACStudentListSerializer
-        return RACStudentSerializer
-
-    def get_queryset(self):
-        queryset = RACStudent.objects.all().order_by('-created_at')
-        search = self.request.query_params.get('search')
-        country = self.request.query_params.get('country')
-        year = self.request.query_params.get('year')
-        if search:
-            queryset = queryset.filter(Q(full_name__icontains=search) | Q(email__icontains=search) | Q(mobile_number__icontains=search) | Q(passport_number__icontains=search) | Q(preferred_country__icontains=search) | Q(academic_details__icontains=search) | Q(work_experience__icontains=search) | Q(address__icontains=search) | Q(parent_name__icontains=search))
-        if country:
-            queryset = queryset.filter(preferred_country=country)
-        if year:
-            queryset = queryset.filter(intake_date__year=year)
-        return queryset
-
-def clean_value(value):
-    if pd.isna(value):
-        return None
-    value = str(value).strip()
-    if value.lower() in ['nan', 'none', 'null', '']:
-        return None
-    return value
-
-def parse_date(value):
-    if pd.isna(value):
-        return None
-    try:
-        date_value = pd.to_datetime(value, errors='coerce')
-        if pd.isna(date_value):
-            return None
-        return date_value.date()
-    except Exception:
-        return None
-
-def parse_test_score(value):
-    if pd.isna(value):
-        return None
-    try:
-        return float(value)
-    except Exception:
-        return None
-
-def parse_budget(value):
-    if pd.isna(value):
-        return None
-    try:
-        value = str(value).replace(',', '').strip()
-        return float(value)
-    except Exception:
-        return None
-
-def get_column_value(row, possible_names):
-    for col in possible_names:
-        value = row.get(col)
-        if pd.notna(value) and str(value).strip():
-            return value
-    return None
-
 from datetime import datetime
 
 import pandas as pd
@@ -90,16 +13,19 @@ from .pagination import StandardPagination
 from .serializers import RACStudentListSerializer, RACStudentSerializer
 
 
+# CRUD + search/filter endpoints for RACStudent records.
 class RACStudentViewSet(viewsets.ModelViewSet):
     queryset = RACStudent.objects.all().order_by("-created_at")
     serializer_class = RACStudentSerializer
     pagination_class = StandardPagination
 
+    # Use the lighter list serializer only for the list action.
     def get_serializer_class(self):
         if self.action == "list":
             return RACStudentListSerializer
         return RACStudentSerializer
 
+    # Apply search/country/year filters on top of the base queryset.
     def get_queryset(self):
         queryset = RACStudent.objects.all().order_by("-created_at")
 
@@ -129,10 +55,13 @@ class RACStudentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 intake_date__year=year
             )
-
         return queryset
 
+    # Stamp created_by with the logged-in user's email on manual "Add Student".
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user.email)
 
+# Turn an Excel cell into a clean string, or None if it's blank/NaN.
 def clean_value(value):
     if pd.isna(value):
         return None
@@ -141,10 +70,10 @@ def clean_value(value):
 
     if value.lower() in ["nan", "none", "null", ""]:
         return None
-
     return value
 
 
+# Parse an Excel cell into a date, or None if it can't be parsed.
 def parse_date(value):
     if pd.isna(value):
         return None
@@ -154,27 +83,24 @@ def parse_date(value):
             value,
             errors="coerce"
         )
-
         if pd.isna(date_value):
             return None
-
         return date_value.date()
-
     except Exception:
         return None
 
 
+# Parse an Excel cell into a float test score, or None if invalid.
 def parse_test_score(value):
     if pd.isna(value):
         return None
 
     try:
         return float(value)
-
     except Exception:
         return None
 
-
+# Parse an Excel cell (with optional commas) into a float budget.
 def parse_budget(value):
     if pd.isna(value):
         return None
@@ -182,21 +108,20 @@ def parse_budget(value):
     try:
         value = str(value).replace(",", "").strip()
         return float(value)
-
     except Exception:
         return None
 
-
+# Return the first non-empty value found under any of the given column names.
 def get_column_value(row, possible_names):
     for column in possible_names:
         value = row.get(column)
 
         if pd.notna(value) and str(value).strip():
             return value
-
     return None
 
 
+# Bulk-imports students from one or more uploaded Excel/CSV files.
 class UploadStudentsAPIView(APIView):
 
     def post(self, request):
@@ -209,7 +134,6 @@ class UploadStudentsAPIView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
-
         try:
             total_inserted = 0
             total_skipped = 0
@@ -234,7 +158,7 @@ class UploadStudentsAPIView(APIView):
                 for index, row in df.iterrows():
 
                     try:
-    
+
                         full_name = clean_value(
                             row.get("full_name")
                         )
@@ -323,6 +247,8 @@ class UploadStudentsAPIView(APIView):
                             "parent_name": clean_value(
                                 row.get("parent_name")
                             ),
+
+                            "created_by": request.user.email,
                         }
 
                         parsed_rows.append(
@@ -395,40 +321,26 @@ class UploadStudentsAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-
+# Returns a count of students matching optional country/status/year filters.
 @api_view(["GET"])
 def student_count(request):
     queryset = RACStudent.objects.all()
 
     country = request.GET.get("country")
     year = request.GET.get("year")
+    status_param = request.GET.get("status")
 
     if country:
-        queryset = queryset.filter(
-            preferred_country=country
-        )
+        queryset = queryset.filter(preferred_country=country)
+
+    if status_param:
+        queryset = queryset.filter(status=status_param)
 
     if year:
-        queryset = queryset.filter(
-            intake_date__year=year
-        )
+        queryset = queryset.filter(intake_date__year=year)
 
     return Response(
         {
             "total_students": queryset.count()
         }
     )
-
-@api_view(['GET'])
-def student_count(request):
-    queryset = RACStudent.objects.all()
-    country = request.GET.get('country')
-    year = request.GET.get('year')
-    status = request.GET.get('status')
-    if country:
-        queryset = queryset.filter(preferred_country=country)
-    if status:
-        queryset = queryset.filter(status=status)
-    if year:
-        queryset = queryset.filter(intake_date__year=year)
-    return Response({'total_students': queryset.count()})

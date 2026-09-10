@@ -8,10 +8,10 @@ import {
 import logo from '../../assets/RAC.png';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Students', path: '/students' },
   { icon: FileText, label: 'Import Students', path: '/importstudents' },
-  
+
   // future integration
   // { icon: Target, label: 'Leads', path: '/leads' },
   // { icon: FileText, label: 'Applications', path: '/applications' },
@@ -31,37 +31,33 @@ export default function Sidebar({ collapsed, onToggle }) {
 
   return (
     <aside
-  className={`
+      className={`
     h-screen bg-white border-r border-slate-100 flex flex-col
     sidebar-transition fixed left-0 top-0 z-40 shadow-sm
     ${collapsed ? 'w-[78px]' : 'w-[220px]'}
   `}
->
-    {/* Logo */}
-<div
-  className={`flex items-center border-b border-slate-100 h-20 bg-[#F9FAFB] ${
-    collapsed ? "justify-center px-2" : "justify-center px-3"
-  }`}
->
-  <div className="flex items-center justify-center w-full">
-    
-    {/* Logo Background */}
-    <div className=" rounded-2xl p-1 flex items-center justify-center">
-      <img
-        src={logo}
-        alt="RAC Logo"
-        className={`
+    >
+      {/* Logo */}
+      <div
+        className={`flex items-center border-b border-slate-100 h-20 bg-[#F9FAFB] ${collapsed ? "justify-center px-2" : "justify-center px-3"
+          }`}
+      >
+        <div className="flex items-center justify-center w-full">
+
+          {/* Logo Background */}
+          <div className=" rounded-2xl p-1 flex items-center justify-center">
+            <img
+              src={logo}
+              alt="RAC Logo"
+              className={`
           object-contain transition-all duration-300
           ${collapsed ? "w-14 h-14" : "w-24 h-24"}
         `}
-      />
-    </div>
+            />
+          </div>
 
-  </div>
-</div>
-
-  
-
+        </div>
+      </div>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
