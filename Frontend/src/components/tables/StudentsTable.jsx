@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Edit2, Trash2, Plus } from "lucide-react";
 
 export default function StudentsTable({
@@ -10,7 +10,25 @@ export default function StudentsTable({
   onAdd,
   onEdit,
   onDelete,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }) {
+  const headerCheckboxRef = useRef(null);
+
+  const pageIds = data.map((s) => s.id);
+  const selectedOnPageCount = pageIds.filter((id) => selectedIds.has(id)).length;
+  const allOnPageSelected = pageIds.length > 0 && selectedOnPageCount === pageIds.length;
+  const someOnPageSelected = selectedOnPageCount > 0 && !allOnPageSelected;
+
+  // Give the header checkbox a visual "partial selection" state when
+  // some (but not all) rows on this page are checked.
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = someOnPageSelected;
+    }
+  }, [someOnPageSelected]);
+
   return (
     <div className="bg-white rounded-2xl shadow-card border border-slate-400 overflow-hidden">
       {/* Header */}
@@ -27,7 +45,6 @@ export default function StudentsTable({
       </div>
 
       {/* Table */}
-      {/* Table */}
       <div className="max-h-[400px] overflow-auto bg-slate-50 p-1">
         <table
           className="w-full text-sm"
@@ -39,6 +56,27 @@ export default function StudentsTable({
           {/* Fixed Header */}
           <thead className="sticky top-0 z-18">
             <tr>
+              <th
+                className="
+              px-4 py-2
+              w-10
+              text-left
+              bg-white
+              border-b
+              border-slate-200
+              sticky
+              top-1
+            "
+              >
+                <input
+                  ref={headerCheckboxRef}
+                  type="checkbox"
+                  checked={allOnPageSelected}
+                  onChange={(e) => onToggleSelectAll(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                />
+              </th>
+
               {[
                 "Full Name",
                 "DOB",
@@ -82,7 +120,7 @@ export default function StudentsTable({
             {data.length === 0 ? (
               <tr>
                 <td
-                  colSpan="14"
+                  colSpan="15"
                   className="text-center py-10 text-slate-400 bg-white rounded-xl"
                 >
                   No Students Found
@@ -101,7 +139,16 @@ export default function StudentsTable({
                         duration-150
             "
                 >
-                  <td className="px-2 py-1.5   text-slate-800 rounded-l-xl whitespace-nowrap">
+                  <td className="px-4 py-1.5 rounded-l-xl">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(student.id)}
+                      onChange={() => onToggleSelect(student.id)}
+                      className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    />
+                  </td>
+
+                  <td className="px-2 py-1.5   text-slate-800 whitespace-nowrap">
                     {student.full_name}
                   </td>
 

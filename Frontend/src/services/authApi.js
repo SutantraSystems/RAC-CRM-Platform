@@ -33,3 +33,27 @@ export const getCurrentUser = async () => {
 
     return response.data;
 };
+
+export const checkEmailExists = async (email) => {
+    const response = await axiosInstance.post(
+        "/auth/forgot-password/check-email/",
+        { email }
+    );
+
+    return response.data;
+};
+
+export const resetPassword = async (data) => {
+    const response = await axiosInstance.post(
+        "/auth/forgot-password/reset/",
+        data
+    );
+
+    return response.data;
+};
+
+export const deleteStudents = (ids) => {
+  return axiosInstance.delete(`${STUDENTS_URL}/bulk-delete/`, {
+    data: { ids },
+  });
+};

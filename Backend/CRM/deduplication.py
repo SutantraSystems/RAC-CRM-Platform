@@ -46,7 +46,6 @@ def normalize_for_comparison(value):
 
     return value.lower()
 
-
 def build_dedup_hash(data):
     values = [
         normalize_for_comparison(data.get(field))

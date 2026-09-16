@@ -51,3 +51,36 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data["password"],
         )
         return user
+
+class ResetPasswordSerializer(serializers.Serializer):
+
+    email = serializers.EmailField()
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=8
+    )
+    confirm_password = serializers.CharField(
+        write_only=True
+    )
+
+    def validate_email(self, value):
+        value = value.lower().strip()
+        if not User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(
+                "No account found with this email."
+            )
+        return value
+
+    def validate(self, data):
+        if data["new_password"] != data["confirm_password"]:
+            raise serializers.ValidationError({
+                "confirm_password": "Passwords do not match."
+            })
+        return data
+
+    def save(self):
+        email = self.validated_data["email"]
+        user = User.objects.get(email__iexact=email)
+        user.set_password(self.validated_data["new_password"])
+        user.save()
+        return user

@@ -12,10 +12,9 @@ from .models import RACStudent
 from .pagination import StandardPagination
 from .serializers import RACStudentListSerializer, RACStudentSerializer
 
-
 # CRUD + search/filter endpoints for RACStudent records.
 class RACStudentViewSet(viewsets.ModelViewSet):
-    queryset = RACStudent.objects.all().order_by("-created_at")
+    queryset = RACStudent.objects.all().order_by("-created_at","-id")
     serializer_class = RACStudentSerializer
     pagination_class = StandardPagination
 
@@ -27,7 +26,7 @@ class RACStudentViewSet(viewsets.ModelViewSet):
 
     # Apply search/country/year filters on top of the base queryset.
     def get_queryset(self):
-        queryset = RACStudent.objects.all().order_by("-created_at")
+        queryset = RACStudent.objects.all().order_by("-created_at","-id")
 
         search = self.request.query_params.get("search")
         country = self.request.query_params.get("country")
@@ -119,7 +118,6 @@ def get_column_value(row, possible_names):
         if pd.notna(value) and str(value).strip():
             return value
     return None
-
 
 # Bulk-imports students from one or more uploaded Excel/CSV files.
 class UploadStudentsAPIView(APIView):
@@ -344,3 +342,55 @@ def student_count(request):
             "total_students": queryset.count()
         }
     )
+
+class BulkDeleteStudentsAPIView(APIView):
+
+    def delete(self, request):
+        ids = request.data.get("ids", [])
+
+        if not isinstance(ids, list) or not ids:
+            return Response(
+                {"error": "Provide a non-empty list of student ids to delete."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        deleted_count, _ = RACStudent.objects.filter(id__in=ids).delete()
+
+        return Response(
+            {
+                "success": True,
+                "deleted_count": deleted_count,
+            },
+            status=status.HTTP_200_OK
+        )
+
+@api_view(["GET"])
+def student_ids(request):
+    queryset = RACStudent.objects.all()
+
+    search = request.GET.get("search")
+    country = request.GET.get("country")
+    year = request.GET.get("year")
+
+    if search:
+        queryset = queryset.filter(
+            Q(full_name__icontains=search)
+            | Q(email__icontains=search)
+            | Q(mobile_number__icontains=search)
+            | Q(passport_number__icontains=search)
+            | Q(preferred_country__icontains=search)
+            | Q(academic_details__icontains=search)
+            | Q(work_experience__icontains=search)
+            | Q(address__icontains=search)
+            | Q(parent_name__icontains=search)
+        )
+
+    if country:
+        queryset = queryset.filter(preferred_country=country)
+
+    if year:
+        queryset = queryset.filter(intake_date__year=year)
+
+    ids = list(queryset.values_list("id", flat=True))
+
+    return Response({"ids": ids})

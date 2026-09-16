@@ -23,7 +23,6 @@ export default function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-
       {/* // future integration */}
       {/* <Route path="/applications" element={<Applications />} /> */}
       {/* <Route path="/universities" element={<Universities />} /> */}

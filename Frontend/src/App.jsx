@@ -12,6 +12,7 @@ import Sidebar from "./components/sidebar/Sidebar";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Profile from "./pages/Profile";
+import ForgotPassword from "./pages/ForgotPassword";
 // future integration
 // '/applications': 'Applications',
 // '/universities': 'Universities',
@@ -77,6 +78,10 @@ const App = () => {
         <Route
           path="/register"
           element={<Register />}
+        />
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
         />
 
         {/* PROTECTED CRM ROUTES */}

@@ -29,6 +29,13 @@ export const deleteStudent = (id) => {
   return axiosInstance.delete(`${STUDENTS_URL}/${id}/`);
 };
 
+// Bulk delete students
+export const deleteStudents = (ids) => {
+  return axiosInstance.delete(`${STUDENTS_URL}/bulk-delete/`, {
+    data: { ids },
+  });
+};
+
 // Upload Excel files
 export const uploadStudentsExcel = (files) => {
   const formData = new FormData();
@@ -51,6 +58,13 @@ export const uploadStudentsExcel = (files) => {
 // Get student count
 export const getStudentCount = (params = {}) => {
   return axiosInstance.get(`${STUDENTS_URL}/count/`, {
+    params,
+  });
+};
+
+// Get all student ids matching current filters (for "select all across pages")
+export const getStudentIds = (params = {}) => {
+  return axiosInstance.get(`${STUDENTS_URL}/ids/`, {
     params,
   });
 };

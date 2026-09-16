@@ -3,10 +3,10 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, ResetPasswordSerializer
 from django.middleware.csrf import get_token
 from rest_framework.decorators import api_view, permission_classes
-
+from django.contrib.auth import get_user_model
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -102,3 +102,38 @@ class MeView(APIView):
 def csrf_view(request):
     get_token(request)
     return Response({"detail": "CSRF cookie set"})
+
+User = get_user_model()
+class CheckEmailView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email", "").lower().strip()
+
+        if not email:
+            return Response(
+                {"detail": "Email is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        exists = User.objects.filter(email__iexact=email).exists()
+        return Response({"exists": exists})
+
+class ResetPasswordView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Password updated successfully."},
+                status=status.HTTP_200_OK
+            )
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )

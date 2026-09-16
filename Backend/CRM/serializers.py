@@ -3,7 +3,6 @@ from rest_framework import serializers
 from .deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
 from .models import RACStudent
 
-
 class RACStudentSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -38,7 +37,6 @@ class RACStudentSerializer(serializers.ModelSerializer):
             })
 
         return attrs
-
 
 class RACStudentListSerializer(serializers.ModelSerializer):
 

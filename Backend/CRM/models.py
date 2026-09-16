@@ -2,7 +2,6 @@ from django.db import models
 
 from CRM.deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
 
-
 class RACStudent(models.Model):
 
     full_name = models.CharField(
@@ -104,7 +103,7 @@ class RACStudent(models.Model):
 
     class Meta:
         db_table = "rac_students"
-        ordering = ["-created_at"]
+        ordering = ["-created_at" ,"-id"]
 
     def save(self, *args, **kwargs):
         data = {
