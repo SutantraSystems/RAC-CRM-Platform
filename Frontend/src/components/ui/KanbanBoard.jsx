@@ -21,7 +21,7 @@ function LeadCard({ lead }) {
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
-            {lead.name.split(' ').map(n => n[0]).join('').slice(0,2)}
+            {lead.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
           </div>
           <span className="font-semibold text-slate-800 text-sm">{lead.name}</span>
         </div>

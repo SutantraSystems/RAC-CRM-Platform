@@ -1,117 +1,119 @@
 from django.db import models
 
+from CRM.deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
+
 class RACStudent(models.Model):
-   
-    # FULL NAME
+
     full_name = models.CharField(
         max_length=255,
         null=True,
-        blank=True
+        blank=True,
     )
 
-    # DATE OF BIRTH
     dob = models.DateField(
         null=True,
-        blank=True
+        blank=True,
     )
 
-    # MOBILE NUMBER
     mobile_number = models.CharField(
         max_length=15,
-        unique=True,
         db_index=True,
-        null=True,
-        blank=True
-    )
-
-    # EMAIL
-    email = models.EmailField(
-        unique=True,
-        db_index=True,
-        null=True,
-        blank=True
-    )
-
-    # PASSPORT DETAILS
-    passport_number = models.CharField(
-        max_length=50,
-        unique=True,
         null=True,
         blank=True,
-        db_index=True
     )
 
-   
-    # ACADEMIC DETAILS
+    email = models.EmailField(
+        db_index=True,
+        null=True,
+        blank=True,
+    )
+
+    passport_number = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
     academic_details = models.TextField(
         null=True,
         blank=True,
-        db_index=True
+        db_index=True,
     )
 
     test_score = models.FloatField(
         null=True,
-        blank=True
+        blank=True,
     )
-
-   
 
     preferred_country = models.CharField(
         max_length=100,
         null=True,
         blank=True,
-        db_index=True
+        db_index=True,
     )
 
-    # INTAKE DATE
     intake_date = models.DateField(
         null=True,
-        blank=True
+        blank=True,
     )
 
-    # BUDGET
     budget = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         null=True,
-        blank=True
+        blank=True,
     )
 
-    # WORK EXPERIENCE
     work_experience = models.TextField(
         null=True,
-        blank=True
+        blank=True,
     )
 
-    # ADDRESS
     address = models.TextField(
         null=True,
-        blank=True
+        blank=True,
     )
 
-    # PARENT NAME
     parent_name = models.CharField(
         max_length=255,
         null=True,
-        blank=True
+        blank=True,
+    )
+    created_by = models.EmailField(
+        null=True,
+        blank=True,
+        help_text="Email of the logged-in user who created/uploaded this record.",
     )
 
-    
-    # TIMESTAMPS
+    dedup_hash = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        editable=False,
+    )
+
     created_at = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
     )
 
     updated_at = models.DateTimeField(
-        auto_now=True
+        auto_now=True,
     )
 
-    # meta class is used to configure the database table name and default ordering of records when queried. 
     class Meta:
         db_table = "rac_students"
-        ordering = ['-created_at']
+        ordering = ["-created_at" ,"-id"]
 
-    
-    # returns the full name of the student when the object is displayed in the admin UI.
+    def save(self, *args, **kwargs):
+        data = {
+            field: getattr(self, field)
+            for field in DUPLICATE_CHECK_FIELDS
+        }
+
+        self.dedup_hash = build_dedup_hash(data)
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.full_name
+        return self.full_name or f"Student {self.pk}"

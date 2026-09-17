@@ -47,20 +47,6 @@ crm_dash/
 
 ---
 
-# Features
-
-- Dashboard overview
-- Student management
-- Student filtering
-- Applications management
-- University management
-- Leads management
-- Analytics
-- Import students
-- API integration
-- PostgreSQL database integration
-
----
 
 # Prerequisites
 
@@ -183,6 +169,27 @@ http://localhost:5173
 ```
 
 ---
+
+# Application Architecture
+
+```text
+                    User
+                     │
+                     ▼
+              React Frontend
+              localhost:5173
+                     │
+                     │ REST API
+                     ▼
+              Django Backend
+              localhost:8000
+                     │
+                     ▼
+                PostgreSQL
+```
+
+---
+
 
 
 

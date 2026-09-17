@@ -36,11 +36,10 @@ export default function KpiCard({
       {trend && (
         <div className="mt-2 flex items-center gap-1">
           <span
-            className={`text-xs font-semibold ${
-              trend === "up"
+            className={`text-xs font-semibold ${trend === "up"
                 ? "text-primary-600"
                 : "text-primary-400"
-            }`}
+              }`}
           >
             {trend === "up" ? "↑" : "↓"} {trendValue}
           </span>

@@ -5,22 +5,22 @@ export default function StudentForm({
   onSubmit,
   onCancel,
 }) {
-  
+
   const [formData, setFormData] = useState({
-  full_name: initialData.full_name || "",
-  dob: initialData.dob || "",
-  mobile_number: initialData.mobile_number || "",
-  email: initialData.email || "",
-  passport_number: initialData.passport_number || "",
-  academic_details: initialData.academic_details || "",
-  test_score: initialData.test_score ?? "",
-  preferred_country: initialData.preferred_country || "",
-  intake_date: initialData.intake_date || "",
-  budget: initialData.budget ?? "",
-  work_experience: initialData.work_experience || "",
-  address: initialData.address || "",
-  parent_name: initialData.parent_name || "",
-});
+    full_name: initialData.full_name || "",
+    dob: initialData.dob || "",
+    mobile_number: initialData.mobile_number || "",
+    email: initialData.email || "",
+    passport_number: initialData.passport_number || "",
+    academic_details: initialData.academic_details || "",
+    test_score: initialData.test_score ?? "",
+    preferred_country: initialData.preferred_country || "",
+    intake_date: initialData.intake_date || "",
+    budget: initialData.budget ?? "",
+    work_experience: initialData.work_experience || "",
+    address: initialData.address || "",
+    parent_name: initialData.parent_name || "",
+  });
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -29,31 +29,31 @@ export default function StudentForm({
   };
 
   const handleSubmit = (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const payload = {};
+    const payload = {};
 
-  Object.keys(formData).forEach((key) => {
-    let value = formData[key];
+    Object.keys(formData).forEach((key) => {
+      let value = formData[key];
 
-    if (value === "") {
-      value = null;
-    }
+      if (value === "") {
+        value = null;
+      }
 
-    if (
-      value !== null &&
-      (key === "test_score" || key === "budget")
-    ) {
-      value = Number(value);
-    }
+      if (
+        value !== null &&
+        (key === "test_score" || key === "budget")
+      ) {
+        value = Number(value);
+      }
 
-    payload[key] = value;
-  });
+      payload[key] = value;
+    });
 
-  console.log("Payload:", payload);
+    console.log("Payload:", payload);
 
-  onSubmit(payload);
-};
+    onSubmit(payload);
+  };
 
   return (
     //  MODAL WRAPPER
@@ -108,7 +108,7 @@ export default function StudentForm({
               value={formData.email}
               onChange={handleChange}
               className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-              
+
             />
 
             <input

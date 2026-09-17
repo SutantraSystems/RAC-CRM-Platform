@@ -1,27 +1,42 @@
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 
-const API_URL = "http://127.0.0.1:8000/api/students/";
+const STUDENTS_URL = "/students";
 
-export const getStudents = (page = 1) => {
-  return axios.get(`${API_URL}?page=${page}`);
+// Get students with pagination and filters
+export const getStudents = (params = {}) => {
+  return axiosInstance.get(`${STUDENTS_URL}/`, {
+    params,
+  });
 };
 
-export const createStudent = (studentData) => {
-  return axios.post(API_URL, studentData);
-};
-
-export const updateStudent = (id, studentData) => {
-  return axios.put(`${API_URL}${id}/`, studentData);
-};
-
-export const deleteStudent = (id) => {
-  return axios.delete(`${API_URL}${id}/`);
-};
-
+// Get single student
 export const getStudentById = (id) => {
-  return axios.get(`${API_URL}${id}/`);
+  return axiosInstance.get(`${STUDENTS_URL}/${id}/`);
 };
 
+// Create student
+export const createStudent = (studentData) => {
+  return axiosInstance.post(`${STUDENTS_URL}/`, studentData);
+};
+
+// Update student
+export const updateStudent = (id, studentData) => {
+  return axiosInstance.put(`${STUDENTS_URL}/${id}/`, studentData);
+};
+
+// Delete student
+export const deleteStudent = (id) => {
+  return axiosInstance.delete(`${STUDENTS_URL}/${id}/`);
+};
+
+// Bulk delete students
+export const deleteStudents = (ids) => {
+  return axiosInstance.delete(`${STUDENTS_URL}/bulk-delete/`, {
+    data: { ids },
+  });
+};
+
+// Upload Excel files
 export const uploadStudentsExcel = (files) => {
   const formData = new FormData();
 
@@ -29,8 +44,8 @@ export const uploadStudentsExcel = (files) => {
     formData.append("files", file);
   });
 
-  return axios.post(
-    "http://127.0.0.1:8000/api/upload-students/",
+  return axiosInstance.post(
+    `${STUDENTS_URL}/upload/`,
     formData,
     {
       headers: {
@@ -40,3 +55,16 @@ export const uploadStudentsExcel = (files) => {
   );
 };
 
+// Get student count
+export const getStudentCount = (params = {}) => {
+  return axiosInstance.get(`${STUDENTS_URL}/count/`, {
+    params,
+  });
+};
+
+// Get all student ids matching current filters (for "select all across pages")
+export const getStudentIds = (params = {}) => {
+  return axiosInstance.get(`${STUDENTS_URL}/ids/`, {
+    params,
+  });
+};

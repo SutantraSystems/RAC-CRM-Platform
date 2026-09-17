@@ -1,32 +1,32 @@
-from rest_framework import viewsets, status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from .models import RACStudent
-from .serializers import (
-    RACStudentSerializer,
-    RACStudentListSerializer
-)
-from .pagination import StandardPagination
-import pandas as pd
-from django.db.models import Q
 from datetime import datetime
 
-# ViewSet for handling CRUD operations on RACStudent model with filtering and pagination.
-class RACStudentViewSet(viewsets.ModelViewSet):
+import pandas as pd
+from django.db.models import Q
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-    queryset = RACStudent.objects.all().order_by("-created_at")
+from .deduplication import build_dedup_hash
+from .models import RACStudent
+from .pagination import StandardPagination
+from .serializers import RACStudentListSerializer, RACStudentSerializer
+
+# CRUD + search/filter endpoints for RACStudent records.
+class RACStudentViewSet(viewsets.ModelViewSet):
+    queryset = RACStudent.objects.all().order_by("-created_at","-id")
     serializer_class = RACStudentSerializer
     pagination_class = StandardPagination
 
+    # Use the lighter list serializer only for the list action.
     def get_serializer_class(self):
         if self.action == "list":
             return RACStudentListSerializer
         return RACStudentSerializer
-    
-    # Filter of student table in students.jsx
+
+    # Apply search/country/year filters on top of the base queryset.
     def get_queryset(self):
-        queryset = RACStudent.objects.all().order_by("-created_at")
+        queryset = RACStudent.objects.all().order_by("-created_at","-id")
 
         search = self.request.query_params.get("search")
         country = self.request.query_params.get("country")
@@ -34,25 +34,33 @@ class RACStudentViewSet(viewsets.ModelViewSet):
 
         if search:
             queryset = queryset.filter(
-                Q(full_name__icontains=search) |
-                Q(email__icontains=search) |
-                Q(mobile_number__icontains=search) |
-                Q(passport_number__icontains=search) |
-                Q(preferred_country__icontains=search) |
-                Q(academic_details__icontains=search) |
-                Q(work_experience__icontains=search) |
-                Q(address__icontains=search) |
-                Q(parent_name__icontains=search)
+                Q(full_name__icontains=search)
+                | Q(email__icontains=search)
+                | Q(mobile_number__icontains=search)
+                | Q(passport_number__icontains=search)
+                | Q(preferred_country__icontains=search)
+                | Q(academic_details__icontains=search)
+                | Q(work_experience__icontains=search)
+                | Q(address__icontains=search)
+                | Q(parent_name__icontains=search)
             )
 
         if country:
-            queryset = queryset.filter(preferred_country=country)
-        if year:
-            queryset = queryset.filter(intake_date__year=year)
+            queryset = queryset.filter(
+                preferred_country=country
+            )
 
+        if year:
+            queryset = queryset.filter(
+                intake_date__year=year
+            )
         return queryset
 
-# Utility functions for cleaning and parsing data from the uploaded Excel file.
+    # Stamp created_by with the logged-in user's email on manual "Add Student".
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user.email)
+
+# Turn an Excel cell into a clean string, or None if it's blank/NaN.
 def clean_value(value):
     if pd.isna(value):
         return None
@@ -61,10 +69,10 @@ def clean_value(value):
 
     if value.lower() in ["nan", "none", "null", ""]:
         return None
-
     return value
 
-# Parses date values from the uploaded Excel file, handles varoius formats(date) or null objects.
+
+# Parse an Excel cell into a date, or None if it can't be parsed.
 def parse_date(value):
     if pd.isna(value):
         return None
@@ -74,17 +82,14 @@ def parse_date(value):
             value,
             errors="coerce"
         )
-
         if pd.isna(date_value):
             return None
-
         return date_value.date()
-
     except Exception:
         return None
 
 
-#handles format for test score
+# Parse an Excel cell into a float test score, or None if invalid.
 def parse_test_score(value):
     if pd.isna(value):
         return None
@@ -94,7 +99,7 @@ def parse_test_score(value):
     except Exception:
         return None
 
-#handles format for budget
+# Parse an Excel cell (with optional commas) into a float budget.
 def parse_budget(value):
     if pd.isna(value):
         return None
@@ -105,84 +110,35 @@ def parse_budget(value):
     except Exception:
         return None
 
-# handles and accpets all similar type of column name(mobile,mobile_no)
+# Return the first non-empty value found under any of the given column names.
 def get_column_value(row, possible_names):
-    for col in possible_names:
-        value = row.get(col)
+    for column in possible_names:
+        value = row.get(column)
 
         if pd.notna(value) and str(value).strip():
             return value
-
     return None
 
-
-# API View for Excel Uplaod                       
-
-UPDATE_FIELDS = [
-    "full_name", "dob", "mobile_number",
-    "academic_details", "test_score", "preferred_country",
-    "intake_date", "budget", "work_experience",
-    "address", "parent_name", "updated_at"
-]
-
-UPDATE_FIELDS = [
-    "full_name", "dob", "mobile_number",
-    "academic_details", "test_score", "preferred_country",
-    "intake_date", "budget", "work_experience",
-    "address", "parent_name", "updated_at"
-]
-
-
-def find_best_match(data, existing_by_email, existing_by_mobile):
-    """
-    Match by email (2pts) or mobile (1pt).
-    Returns best matching student or None.
-    """
-    scores = {}
-
-    if data["email"]:
-        match = existing_by_email.get(data["email"])
-        if match:
-            scores[match.pk] = (
-                scores.get(match.pk, (0, match))[0] + 2, match
-            )
-
-    if data["mobile_number"]:
-        match = existing_by_mobile.get(data["mobile_number"])
-        if match:
-            scores[match.pk] = (
-                scores.get(match.pk, (0, match))[0] + 1, match
-            )
-
-    if not scores:
-        return None
-
-    best_pk = max(scores, key=lambda pk: scores[pk][0])
-    return scores[best_pk][1]
-
-
+# Bulk-imports students from one or more uploaded Excel/CSV files.
 class UploadStudentsAPIView(APIView):
 
     def post(self, request):
-
         files = request.FILES.getlist("files")
 
         if not files:
             return Response(
-                {"error": "No files uploaded"},
+                {
+                    "error": "No files uploaded"
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
-
         try:
-
             total_inserted = 0
-            total_updated  = 0
-            total_rows     = 0
-            total_errors   = []
+            total_skipped = 0
+            total_rows = 0
+            total_errors = []
 
             for file in files:
-
-                # Read & Normalize 
                 df = pd.read_excel(file)
 
                 df.columns = (
@@ -193,41 +149,69 @@ class UploadStudentsAPIView(APIView):
                 )
 
                 total_rows += len(df)
-                errors      = []
+
+                errors = []
                 parsed_rows = []
 
-                #  Parse All Rows 
                 for index, row in df.iterrows():
+
                     try:
 
-                        full_name = clean_value(row.get("full_name"))
-
-                        if not full_name:
-                            full_name = f"Student {index + 1}"
-
-                        email = clean_value(
-                            get_column_value(row, [
-                                "email", "email_id",
-                                "email_address", "mail"
-                            ])
+                        full_name = clean_value(
+                            row.get("full_name")
                         )
 
+                        if not full_name:
+                            errors.append(
+                                f"{file.name} - Row {index + 2}: "
+                                "Full name is required."
+                            )
+                            continue
+
+                        email = clean_value(
+                            get_column_value(
+                                row,
+                                [
+                                    "email",
+                                    "email_id",
+                                    "email_address",
+                                    "mail",
+                                ]
+                            )
+                        )
+
+                        if email:
+                            email = email.lower()
+
                         mobile = clean_value(
-                            get_column_value(row, [
-                                "mobile_number", "mobile",
-                                "mobile_no",     "mobile_no.",
-                                "phone",         "phone_number",
-                                "contact_number","contact"
-                            ])
+                            get_column_value(
+                                row,
+                                [
+                                    "mobile_number",
+                                    "mobile",
+                                    "mobile_no",
+                                    "mobile_no.",
+                                    "phone",
+                                    "phone_number",
+                                    "contact_number",
+                                    "contact",
+                                ]
+                            )
                         )
 
                         data = {
-                            "full_name":    full_name,
-                            "email":        email.lower() if email else None,
+                            "full_name": full_name,
+
+                            "email": email,
+
                             "mobile_number": mobile,
 
                             "dob": parse_date(
                                 row.get("dob")
+                            ),
+
+                            "passport_number": clean_value(
+                                row.get("passport_number")
                             ),
 
                             "academic_details": clean_value(
@@ -261,157 +245,152 @@ class UploadStudentsAPIView(APIView):
                             "parent_name": clean_value(
                                 row.get("parent_name")
                             ),
+
+                            "created_by": request.user.email,
                         }
 
-                        parsed_rows.append((index, data))
+                        parsed_rows.append(
+                            (index, data)
+                        )
 
                     except Exception as e:
                         errors.append(
                             f"{file.name} - Row {index + 2}: {str(e)}"
                         )
 
-                #  Deduplicate Within File 
-                # Priority: email first, then mobile
-                # Rows with neither → always insert as new
-                seen_email  = {}
-                seen_mobile = {}
-                unique_rows = []
+                rows_seen = set()
+                to_insert = []
 
                 for index, data in parsed_rows:
 
-                    email  = data["email"]
-                    mobile = data["mobile_number"]
+                    dedup_hash = build_dedup_hash(data)
 
-                    if email and email in seen_email:
-                        # Duplicate email in file → last row wins
-                        seen_email[email] = (index, data)
+                    if dedup_hash in rows_seen:
+                        total_skipped += 1
+                        continue
 
-                    elif mobile and mobile in seen_mobile:
-                        # Duplicate mobile in file → last row wins
-                        seen_mobile[mobile] = (index, data)
+                    rows_seen.add(dedup_hash)
 
-                    else:
-                        # First time seeing this row
-                        if email:
-                            seen_email[email] = (index, data)
-                        if mobile:
-                            seen_mobile[mobile] = (index, data)
-                        unique_rows.append((index, data))
+                    if RACStudent.objects.filter(
+                        dedup_hash=dedup_hash
+                    ).exists():
+                        total_skipped += 1
+                        continue
 
-                #  Collect Lookup Values 
-                emails  = [
-                    data["email"]
-                    for _, data in unique_rows
-                    if data["email"]
-                ]
-
-                mobiles = [
-                    data["mobile_number"]
-                    for _, data in unique_rows
-                    if data["mobile_number"]
-                ]
-
-                #  2 Bulk DB Lookups 
-                existing_by_email = {
-                    s.email.lower(): s
-                    for s in RACStudent.objects.filter(
-                        email__in=emails
-                    )
-                } if emails else {}
-
-                existing_by_mobile = {
-                    s.mobile_number: s
-                    for s in RACStudent.objects.filter(
-                        mobile_number__in=mobiles
-                    )
-                } if mobiles else {}
-
-                #  Split Insert vs Update 
-                to_insert = []
-                to_update = []
-
-                for index, data in unique_rows:
-                    try:
-
-                        student = find_best_match(
-                            data,
-                            existing_by_email,
-                            existing_by_mobile
+                    to_insert.append(
+                        RACStudent(
+                            **data,
+                            dedup_hash=dedup_hash
                         )
+                    )
 
-                        if student:
-                            # Update existing student
-                            for field, value in data.items():
-                                setattr(student, field, value)
-                            to_update.append(student)
-
-                        else:
-                            # Insert new student
-                            to_insert.append(RACStudent(**data))
-
-                    except Exception as e:
-                        errors.append(
-                            f"{file.name} - Row {index + 2}: {str(e)}"
-                        )
-
-                #  Bulk Insert 
                 if to_insert:
+
                     RACStudent.objects.bulk_create(
-                        to_insert,
-                        ignore_conflicts=True
+                        to_insert
                     )
 
-                #  Bulk Update
-                if to_update:
-                    RACStudent.objects.bulk_update(
-                        to_update,
-                        UPDATE_FIELDS
+                    total_inserted += len(
+                        to_insert
                     )
 
-                total_inserted += len(to_insert)
-                total_updated  += len(to_update)
                 total_errors.extend(errors)
 
             return Response(
                 {
-                    "success":        True,
+                    "success": True,
                     "files_uploaded": len(files),
-                    "total_rows":     total_rows,
-                    "inserted":       total_inserted,
-                    "updated":        total_updated,
-                    "failed":         len(total_errors),
-                    "errors":         total_errors
+                    "total_rows": total_rows,
+                    "inserted": total_inserted,
+                    "skipped_duplicates": total_skipped,
+                    "updated": 0,
+                    "failed": len(total_errors),
+                    "errors": total_errors,
                 },
                 status=status.HTTP_200_OK
             )
 
         except Exception as e:
             return Response(
-                {"success": False, "error": str(e)},
+                {
+                    "success": False,
+                    "error": str(e),
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-# filter based on country, year and status in dashboard
+# Returns a count of students matching optional country/status/year filters.
 @api_view(["GET"])
 def student_count(request):
-
     queryset = RACStudent.objects.all()
 
     country = request.GET.get("country")
     year = request.GET.get("year")
-    status = request.GET.get("status")
+    status_param = request.GET.get("status")
 
     if country:
         queryset = queryset.filter(preferred_country=country)
 
-    if status:
-        queryset = queryset.filter(status=status)
+    if status_param:
+        queryset = queryset.filter(status=status_param)
 
     if year:
         queryset = queryset.filter(intake_date__year=year)
 
-    return Response({
-        "total_students": queryset.count()
-    })
+    return Response(
+        {
+            "total_students": queryset.count()
+        }
+    )
 
+class BulkDeleteStudentsAPIView(APIView):
 
+    def delete(self, request):
+        ids = request.data.get("ids", [])
+
+        if not isinstance(ids, list) or not ids:
+            return Response(
+                {"error": "Provide a non-empty list of student ids to delete."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        deleted_count, _ = RACStudent.objects.filter(id__in=ids).delete()
+
+        return Response(
+            {
+                "success": True,
+                "deleted_count": deleted_count,
+            },
+            status=status.HTTP_200_OK
+        )
+
+@api_view(["GET"])
+def student_ids(request):
+    queryset = RACStudent.objects.all()
+
+    search = request.GET.get("search")
+    country = request.GET.get("country")
+    year = request.GET.get("year")
+
+    if search:
+        queryset = queryset.filter(
+            Q(full_name__icontains=search)
+            | Q(email__icontains=search)
+            | Q(mobile_number__icontains=search)
+            | Q(passport_number__icontains=search)
+            | Q(preferred_country__icontains=search)
+            | Q(academic_details__icontains=search)
+            | Q(work_experience__icontains=search)
+            | Q(address__icontains=search)
+            | Q(parent_name__icontains=search)
+        )
+
+    if country:
+        queryset = queryset.filter(preferred_country=country)
+
+    if year:
+        queryset = queryset.filter(intake_date__year=year)
+
+    ids = list(queryset.values_list("id", flat=True))
+
+    return Response({"ids": ids})
