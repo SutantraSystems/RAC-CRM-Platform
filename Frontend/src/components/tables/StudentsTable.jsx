@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Edit2, Trash2, Plus } from "lucide-react";
+import { Edit2, Trash2, Plus, Eye } from "lucide-react";
 
 export default function StudentsTable({
   data,
@@ -10,6 +10,7 @@ export default function StudentsTable({
   onAdd,
   onEdit,
   onDelete,
+  onViewDetails,
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
@@ -202,6 +203,21 @@ export default function StudentsTable({
 
                   <td className="px-2 py-1.5 rounded-r-xl">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onViewDetails(student.id)}
+                        title="View Details"
+                        className="
+                    p-2
+                    rounded-lg
+                    bg-slate-50
+                    text-slate-600
+                    hover:bg-slate-100
+                    transition-colors
+                  "
+                      >
+                        <Eye size={14} />
+                      </button>
+
                       <button
                         onClick={() => onEdit(student)}
                         title="Edit"
