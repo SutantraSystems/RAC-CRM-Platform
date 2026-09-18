@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
-from .models import RACStudent
+from .models import RACStudent,StudentActivity,StudentComment,StudentDocument
 
 class RACStudentSerializer(serializers.ModelSerializer):
 
@@ -43,3 +43,54 @@ class RACStudentListSerializer(serializers.ModelSerializer):
     class Meta:
         model = RACStudent
         fields = "__all__"
+
+class StudentDocumentSerializer(serializers.ModelSerializer):
+
+    uploaded_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StudentDocument
+        fields = [
+            "id", "student", "file", "document_type",
+            "uploaded_by", "uploaded_by_name", "uploaded_at",
+        ]
+        read_only_fields = ["id", "student", "uploaded_by", "uploaded_at"]
+
+    def get_uploaded_by_name(self, obj):
+        if obj.uploaded_by:
+            return obj.uploaded_by.username or obj.uploaded_by.email
+        return None
+
+
+class StudentCommentSerializer(serializers.ModelSerializer):
+
+    user_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StudentComment
+        fields = [
+            "id", "student", "user", "user_name",
+            "comment", "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "student", "user", "created_at", "updated_at"]
+
+    def get_user_name(self, obj):
+        if obj.user:
+            return obj.user.username or obj.user.email
+        return None
+
+class StudentActivitySerializer(serializers.ModelSerializer):
+
+    user_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StudentActivity
+        fields = [
+            "id", "student", "user", "user_name",
+            "action", "description", "created_at",
+        ]
+
+    def get_user_name(self, obj):
+        if obj.user:
+            return obj.user.username or obj.user.email
+        return None

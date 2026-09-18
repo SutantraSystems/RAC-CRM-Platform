@@ -13,6 +13,7 @@ import Sidebar from "./components/sidebar/Sidebar";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
+import StudentDetails from "./pages/StudentDetails";
 // future integration
 // '/applications': 'Applications',
 // '/universities': 'Universities',
@@ -32,10 +33,13 @@ const pageTitles = {
   "/profile": "My Profile",
 
 };
+
+
 const CRMLayout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const pageTitle = pageTitles[location.pathname] || "Dashboard";
+  const pageTitle =pageTitles[location.pathname] ||
+    (location.pathname.startsWith("/students/") ? "Student Details" : "Dashboard");
 
   return (
     <div className="min-h-screen bg-[#faf8f5]">
@@ -121,6 +125,17 @@ const App = () => {
             <ProtectedRoute>
               <CRMLayout>
                 <Profile />
+              </CRMLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/students/:id"
+          element={
+            <ProtectedRoute>
+              <CRMLayout>
+                <StudentDetails />
               </CRMLayout>
             </ProtectedRoute>
           }

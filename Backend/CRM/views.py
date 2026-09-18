@@ -12,6 +12,19 @@ from .models import RACStudent
 from .pagination import StandardPagination
 from .serializers import RACStudentListSerializer, RACStudentSerializer
 
+from rest_framework import generics
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.shortcuts import get_object_or_404
+
+from .models import RACStudent, StudentDocument, StudentComment, StudentActivity
+from .serializers import (
+    RACStudentListSerializer,
+    RACStudentSerializer,
+    StudentDocumentSerializer,
+    StudentCommentSerializer,
+    StudentActivitySerializer,
+)
+
 # CRUD + search/filter endpoints for RACStudent records.
 class RACStudentViewSet(viewsets.ModelViewSet):
     queryset = RACStudent.objects.all().order_by("-created_at","-id")
@@ -58,7 +71,18 @@ class RACStudentViewSet(viewsets.ModelViewSet):
 
     # Stamp created_by with the logged-in user's email on manual "Add Student".
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user.email)
+        student = serializer.save(created_by=self.request.user.email)
+        log_activity(
+            student, self.request.user, "created",
+            f"Student record created by {self.request.user.email}."
+        )
+
+    def perform_update(self, serializer):
+        student = serializer.save()
+        log_activity(
+            student, self.request.user, "updated",
+            f"Student details updated by {self.request.user.email}."
+        )
 
 # Turn an Excel cell into a clean string, or None if it's blank/NaN.
 def clean_value(value):
@@ -71,7 +95,14 @@ def clean_value(value):
         return None
     return value
 
-
+# Writes one audit-trail row every time something notable happens to a student.
+def log_activity(student, user, action, description):
+    StudentActivity.objects.create(
+        student=student,
+        user=user,
+        action=action,
+        description=description,
+    )
 # Parse an Excel cell into a date, or None if it can't be parsed.
 def parse_date(value):
     if pd.isna(value):
@@ -342,6 +373,71 @@ def student_count(request):
             "total_students": queryset.count()
         }
     )
+
+# Documents — list/upload for a specific student.
+class StudentDocumentListCreateView(generics.ListCreateAPIView):
+    serializer_class = StudentDocumentSerializer
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_queryset(self):
+        return StudentDocument.objects.filter(
+            student_id=self.kwargs["student_id"]
+        )
+
+    def perform_create(self, serializer):
+        student = get_object_or_404(RACStudent, pk=self.kwargs["student_id"])
+        document = serializer.save(
+            student=student,
+            uploaded_by=self.request.user,
+        )
+        log_activity(
+            student, self.request.user, "document_uploaded",
+            f"{self.request.user.email} uploaded a document"
+            f"{f' ({document.document_type})' if document.document_type else ''}."
+        )
+
+# Documents — delete. Restricted to whoever uploaded it, since there are no user roles/permissions in this app yet to base broader access on.
+class StudentDocumentDeleteView(generics.DestroyAPIView):
+    serializer_class = StudentDocumentSerializer
+
+    def get_queryset(self):
+        return StudentDocument.objects.filter(uploaded_by=self.request.user)
+
+# Comments — list/add for a specific student.
+class StudentCommentListCreateView(generics.ListCreateAPIView):
+    serializer_class = StudentCommentSerializer
+
+    def get_queryset(self):
+        return StudentComment.objects.filter(
+            student_id=self.kwargs["student_id"]
+        )
+
+    def perform_create(self, serializer):
+        student = get_object_or_404(RACStudent, pk=self.kwargs["student_id"])
+        serializer.save(
+            student=student,
+            user=self.request.user,
+        )
+        log_activity(
+            student, self.request.user, "comment_added",
+            f"{self.request.user.email} added a comment."
+        )
+
+# Comments — edit/delete. 
+class StudentCommentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = StudentCommentSerializer
+
+    def get_queryset(self):
+        return StudentComment.objects.filter(user=self.request.user)
+
+# Activity — read-only audit trail for a specific student.
+class StudentActivityListView(generics.ListAPIView):
+    serializer_class = StudentActivitySerializer
+
+    def get_queryset(self):
+        return StudentActivity.objects.filter(
+            student_id=self.kwargs["student_id"]
+        )
 
 class BulkDeleteStudentsAPIView(APIView):
 

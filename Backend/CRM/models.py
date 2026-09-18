@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.conf import settings
 from CRM.deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
 
 class RACStudent(models.Model):
@@ -117,3 +117,98 @@ class RACStudent(models.Model):
 
     def __str__(self):
         return self.full_name or f"Student {self.pk}"
+    
+
+class StudentDocument(models.Model):
+
+    student = models.ForeignKey(
+        RACStudent,
+        on_delete=models.CASCADE,
+        related_name="documents",
+    )
+
+    file = models.FileField(
+        upload_to="student_documents/%Y/%m/",
+    )
+
+    document_type = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+    )
+
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "rac_student_documents"
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return f"{self.document_type or 'Document'} — {self.student}"
+
+class StudentComment(models.Model):
+
+    student = models.ForeignKey(
+        RACStudent,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    comment = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "rac_student_comments"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Comment by {self.user} on {self.student}"
+
+class StudentActivity(models.Model):
+
+    ACTION_CHOICES = [
+        ("created", "Student Created"),
+        ("updated", "Student Updated"),
+        ("comment_added", "Comment Added"),
+        ("document_uploaded", "Document Uploaded"),
+    ]
+
+    student = models.ForeignKey(
+        RACStudent,
+        on_delete=models.CASCADE,
+        related_name="activities",
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    action = models.CharField(max_length=30, choices=ACTION_CHOICES)
+    description = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "rac_student_activity"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.action} — {self.student} ({self.created_at})"

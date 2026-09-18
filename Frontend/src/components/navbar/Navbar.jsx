@@ -51,9 +51,9 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
         </button>
         <div>
           <h1 className="font-display font-semibold text-slate-800 text-base leading-tight">{pageTitle}</h1>
-          <p className="text-xs text-slate-400">
+          {/* <p className="text-xs text-slate-400">
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
+          </p> */}
         </div>
       </div>
 

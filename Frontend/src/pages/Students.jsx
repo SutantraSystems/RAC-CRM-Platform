@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   getStudents,
   createStudent,
@@ -29,6 +30,8 @@ const getErrorMessage = (data, fallback) => {
 };
 
 export default function Students() {
+  const navigate = useNavigate();
+
   const [students, setStudents] = useState([]);
 
   const [total, setTotal] = useState(0);
@@ -119,6 +122,11 @@ export default function Students() {
   const handleEdit = (student) => {
     setSelectedStudent(student);
     setShowForm(true);
+  };
+
+  // Navigate to the Student Details page
+  const handleViewDetails = (id) => {
+    navigate(`/students/${id}`);
   };
 
   //  Save student (create/update)
@@ -355,6 +363,7 @@ export default function Students() {
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDeleteStudent}
+        onViewDetails={handleViewDetails}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
         onToggleSelectAll={handleToggleSelectAll}
@@ -430,8 +439,6 @@ export default function Students() {
                   <p className="text-sm font-medium text-slate-700">
                     Are you sure you want to delete the selected students?
                   </p>
-
-
                 </div>
               </div>
             </div>
