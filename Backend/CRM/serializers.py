@@ -1,7 +1,7 @@
 from rest_framework import serializers
-
+from accounts.utils import get_short_name
 from .deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
-from .models import RACStudent,StudentActivity,StudentComment,StudentDocument
+from .models import RACStudent,StudentComment,StudentDocument
 
 class RACStudentSerializer(serializers.ModelSerializer):
 
@@ -58,9 +58,8 @@ class StudentDocumentSerializer(serializers.ModelSerializer):
 
     def get_uploaded_by_name(self, obj):
         if obj.uploaded_by:
-            return obj.uploaded_by.username or obj.uploaded_by.email
+            return get_short_name(obj.uploaded_by.first_name) or obj.uploaded_by.email
         return None
-
 
 class StudentCommentSerializer(serializers.ModelSerializer):
 
@@ -76,21 +75,5 @@ class StudentCommentSerializer(serializers.ModelSerializer):
 
     def get_user_name(self, obj):
         if obj.user:
-            return obj.user.username or obj.user.email
-        return None
-
-class StudentActivitySerializer(serializers.ModelSerializer):
-
-    user_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = StudentActivity
-        fields = [
-            "id", "student", "user", "user_name",
-            "action", "description", "created_at",
-        ]
-
-    def get_user_name(self, obj):
-        if obj.user:
-            return obj.user.username or obj.user.email
+            return get_short_name(obj.user.first_name) or obj.user.email
         return None

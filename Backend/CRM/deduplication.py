@@ -19,7 +19,6 @@ DUPLICATE_CHECK_FIELDS = [
     "parent_name",
 ]
 
-
 def normalize_for_comparison(value):
     if value is None:
         return None
@@ -46,6 +45,8 @@ def normalize_for_comparison(value):
 
     return value.lower()
 
+ 
+#Create a unique value based on the student's duplicate-check fields.
 def build_dedup_hash(data):
     values = [
         normalize_for_comparison(data.get(field))

@@ -5,6 +5,11 @@ User = get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
 
+    full_name = serializers.CharField(
+        max_length=150,
+        allow_blank=False,
+    )
+
     password = serializers.CharField(
         write_only=True,
         min_length=8
@@ -17,10 +22,19 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
+            "full_name",
             "email",
             "password",
             "password_confirm",
         ]
+
+    def validate_full_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError(
+                "Full name is required."
+            )
+        return value
 
     def validate_email(self, value):
 
@@ -45,10 +59,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         validated_data.pop("password_confirm")
         email = validated_data["email"]
+        full_name = validated_data["full_name"]
+
         user = User.objects.create_user(
             username=email,
             email=email,
             password=validated_data["password"],
+            first_name=full_name,
         )
         return user
 
