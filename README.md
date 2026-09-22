@@ -1,6 +1,6 @@
 # RAC CRM Dashboard
 
-A full-stack CRM dashboard application built for managing students, applications, universities, leads, and analytics.
+A full-stack CRM dashboard application for managing students and CRM data.
 
 ## Tech Stack
 
@@ -23,21 +23,21 @@ A full-stack CRM dashboard application built for managing students, applications
 ## Project Structure
 
 ```text
-crm_dash/
+RAC-CRM-Platform/
 │
-├── backend/
+├── Backend/
 │   ├── Backend/          # Django project configuration
-│   ├── CRM/              # Main CRM application
+│   ├── CRM/              # CRM application
+│   ├── accounts/         # Authentication
 │   ├── manage.py
 │   └── requirements.txt
 │
-├── frontend/
+├── Frontend/
 │   ├── src/
 │   │   ├── components/
+│   │   ├── context/
 │   │   ├── pages/
-│   │   ├── services/
-│   │   └── routes/
-│   │
+│   │   └── services/
 │   ├── package.json
 │   └── vite.config.js
 │
@@ -47,24 +47,22 @@ crm_dash/
 
 ---
 
-
-# Prerequisites
+## Prerequisites
 
 Make sure the following are installed:
 
-- Python 3.10+
-- Node.js 18+
-- PostgreSQL
-- npm
+- Python - 3.12.10
+- Node.js - v26.1.0
+- PostgreSQL - 16.14
 
 ---
 
-# Backend Setup
+## Backend Setup
 
 Navigate to the backend directory:
 
 ```bash
-cd backend
+cd Backend
 ```
 
 Create a virtual environment:
@@ -95,9 +93,9 @@ pip install -r requirements.txt
 
 ---
 
-## Configure Environment Variables
+## Environment Variables
 
-Create a `.env` file inside the backend directory:
+Create a `.env` file inside the `Backend` directory:
 
 ```env
 DB_NAME=rac_crm
@@ -105,7 +103,6 @@ DB_USER=postgres
 DB_PASSWORD=your_password
 DB_HOST=localhost
 DB_PORT=5432
-
 DEBUG=True
 SECRET_KEY=your-secret-key
 ```
@@ -114,7 +111,7 @@ SECRET_KEY=your-secret-key
 
 ## Database Setup
 
-Create a PostgreSQL database:
+Create the PostgreSQL database:
 
 ```sql
 CREATE DATABASE rac_crm;
@@ -134,7 +131,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-The backend will run at:
+Backend:
 
 ```text
 http://127.0.0.1:8000
@@ -142,12 +139,12 @@ http://127.0.0.1:8000
 
 ---
 
-# Frontend Setup
+## Frontend Setup
 
 Open a new terminal and navigate to the frontend directory:
 
 ```bash
-cd frontend
+cd Frontend
 ```
 
 Install dependencies:
@@ -156,13 +153,19 @@ Install dependencies:
 npm install
 ```
 
+Create a `.env` file inside the `Frontend` directory:
+
+```env
+VITE_API_URL=http://localhost:8000/api
+```
+
 Run the development server:
 
 ```bash
 npm run dev
 ```
 
-The frontend will run at:
+Frontend:
 
 ```text
 http://localhost:5173
@@ -170,27 +173,18 @@ http://localhost:5173
 
 ---
 
-# Application Architecture
+## Application Architecture
 
 ```text
-                    User
-                     │
-                     ▼
-              React Frontend
-              localhost:5173
-                     │
-                     │ REST API
-                     ▼
-              Django Backend
-              localhost:8000
-                     │
-                     ▼
-                PostgreSQL
+User
+ │
+ ▼
+React + Vite
+ │
+ │ REST API
+ ▼
+Django REST Framework
+ │
+ ▼
+PostgreSQL
 ```
-
----
-
-
-
-
-

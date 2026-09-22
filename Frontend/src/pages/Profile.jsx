@@ -7,9 +7,11 @@ export default function Profile() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
+    const fullName = user?.full_name || '';
     const email = user?.email || '';
-    const displayName = email ? email.split('@')[0] : 'User';
-    const initials = email ? email.slice(0, 2).toUpperCase() : '??';
+    const initials = fullName
+        ? fullName.trim().split(/\s+/).map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+        : (email ? email.slice(0, 2).toUpperCase() : '??');
 
     const handleLogout = async () => {
         try {
@@ -20,7 +22,7 @@ export default function Profile() {
     };
 
     const details = [
-        { icon: UserIcon, label: 'Username', value: displayName || '—' },
+        { icon: UserIcon, label: 'Full Name', value: fullName || '—' },
         { icon: Mail, label: 'Email', value: email || '—' }
     ];
 
@@ -34,7 +36,7 @@ export default function Profile() {
                     </div>
                     <div>
                         <h2 className="font-display font-bold text-xl text-white leading-tight">
-                            {displayName}
+                            {fullName || 'User'}
                         </h2>
                         <p className="text-primary-100 text-sm mt-0.5">{email}</p>
                     </div>

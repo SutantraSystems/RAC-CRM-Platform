@@ -118,7 +118,6 @@ class RACStudent(models.Model):
     def __str__(self):
         return self.full_name or f"Student {self.pk}"
     
-
 class StudentDocument(models.Model):
 
     student = models.ForeignKey(
@@ -180,35 +179,3 @@ class StudentComment(models.Model):
     def __str__(self):
         return f"Comment by {self.user} on {self.student}"
 
-class StudentActivity(models.Model):
-
-    ACTION_CHOICES = [
-        ("created", "Student Created"),
-        ("updated", "Student Updated"),
-        ("comment_added", "Comment Added"),
-        ("document_uploaded", "Document Uploaded"),
-    ]
-
-    student = models.ForeignKey(
-        RACStudent,
-        on_delete=models.CASCADE,
-        related_name="activities",
-    )
-
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
-
-    action = models.CharField(max_length=30, choices=ACTION_CHOICES)
-    description = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "rac_student_activity"
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.action} — {self.student} ({self.created_at})"

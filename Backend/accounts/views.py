@@ -1,12 +1,13 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer, ResetPasswordSerializer
+from .serializers import RegisterSerializer
+from .utils import get_short_name
 from django.middleware.csrf import get_token
 from rest_framework.decorators import api_view, permission_classes
-from django.contrib.auth import get_user_model
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -26,6 +27,8 @@ class RegisterView(APIView):
                         "id": user.id,
                         "username": user.username,
                         "email": user.email,
+                        "full_name": user.first_name,
+                        "short_name": get_short_name(user.first_name),
                     }
                 },
                 status=status.HTTP_201_CREATED
@@ -34,7 +37,7 @@ class RegisterView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
 class LoginView(APIView):
 
     permission_classes = [AllowAny]
@@ -73,6 +76,8 @@ class LoginView(APIView):
                 "id": user.id,
                 "email": user.email,
                 "username": user.username,
+                "full_name": user.first_name,
+                "short_name": get_short_name(user.first_name),
             }
         })
 
@@ -95,6 +100,8 @@ class MeView(APIView):
             "id": user.id,
             "email": user.email,
             "username": user.username,
+            "full_name": user.first_name,
+            "short_name": get_short_name(user.first_name),
         })
 
 @api_view(["GET"])

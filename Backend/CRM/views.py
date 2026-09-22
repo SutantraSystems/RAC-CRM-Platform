@@ -1,6 +1,6 @@
 from datetime import datetime
-
 import pandas as pd
+
 from django.db.models import Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view
@@ -16,13 +16,12 @@ from rest_framework import generics
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 
-from .models import RACStudent, StudentDocument, StudentComment, StudentActivity
+from .models import RACStudent, StudentDocument, StudentComment
 from .serializers import (
     RACStudentListSerializer,
     RACStudentSerializer,
     StudentDocumentSerializer,
-    StudentCommentSerializer,
-    StudentActivitySerializer,
+    StudentCommentSerializer
 )
 
 # CRUD + search/filter endpoints for RACStudent records.
@@ -118,7 +117,6 @@ def parse_date(value):
         return date_value.date()
     except Exception:
         return None
-
 
 # Parse an Excel cell into a float test score, or None if invalid.
 def parse_test_score(value):
@@ -429,15 +427,6 @@ class StudentCommentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return StudentComment.objects.filter(user=self.request.user)
-
-# Activity — read-only audit trail for a specific student.
-class StudentActivityListView(generics.ListAPIView):
-    serializer_class = StudentActivitySerializer
-
-    def get_queryset(self):
-        return StudentActivity.objects.filter(
-            student_id=self.kwargs["student_id"]
-        )
 
 class BulkDeleteStudentsAPIView(APIView):
 

@@ -131,6 +131,7 @@ export default function StudentsTable({
               data.map((student) => (
                 <tr
                   key={student.id}
+                  onClick={() => onViewDetails(student.id)}
                   className="
                         bg-white
                         border-b
@@ -138,9 +139,14 @@ export default function StudentsTable({
                         hover:bg-slate-200
                         transition-colors
                         duration-150
-            "
+                        cursor-pointer
+                "
                 >
-                  <td className="px-4 py-1.5 rounded-l-xl">
+
+                  <td
+                    className="px-4 py-1.5 rounded-l-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <input
                       type="checkbox"
                       checked={selectedIds.has(student.id)}
@@ -201,7 +207,10 @@ export default function StudentsTable({
                     {student.parent_name || "-"}
                   </td>
 
-                  <td className="px-2 py-1.5 rounded-r-xl">
+                  <td
+                    className="px-2 py-1.5 rounded-r-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onViewDetails(student.id)}
