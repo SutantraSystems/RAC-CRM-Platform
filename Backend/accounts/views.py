@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer,ResetPasswordSerializer
 from .utils import get_short_name
 from django.middleware.csrf import get_token
 from rest_framework.decorators import api_view, permission_classes

@@ -23,6 +23,7 @@ from .serializers import (
     StudentDocumentSerializer,
     StudentCommentSerializer
 )
+from django.db.models import Count
 
 # CRUD + search/filter endpoints for RACStudent records.
 class RACStudentViewSet(viewsets.ModelViewSet):
@@ -43,6 +44,7 @@ class RACStudentViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get("search")
         country = self.request.query_params.get("country")
         year = self.request.query_params.get("year")
+        status_param = self.request.query_params.get("status")
 
         if search:
             queryset = queryset.filter(
@@ -62,6 +64,11 @@ class RACStudentViewSet(viewsets.ModelViewSet):
                 preferred_country=country
             )
 
+        if status_param:
+            queryset = queryset.filter(
+                status=status_param
+            )
+
         if year:
             queryset = queryset.filter(
                 intake_date__year=year
@@ -70,18 +77,11 @@ class RACStudentViewSet(viewsets.ModelViewSet):
 
     # Stamp created_by with the logged-in user's email on manual "Add Student".
     def perform_create(self, serializer):
-        student = serializer.save(created_by=self.request.user.email)
-        log_activity(
-            student, self.request.user, "created",
-            f"Student record created by {self.request.user.email}."
-        )
+        serializer.save(created_by=self.request.user.email)
 
     def perform_update(self, serializer):
-        student = serializer.save()
-        log_activity(
-            student, self.request.user, "updated",
-            f"Student details updated by {self.request.user.email}."
-        )
+        serializer.save()
+        
 
 # Turn an Excel cell into a clean string, or None if it's blank/NaN.
 def clean_value(value):
@@ -94,14 +94,6 @@ def clean_value(value):
         return None
     return value
 
-# Writes one audit-trail row every time something notable happens to a student.
-def log_activity(student, user, action, description):
-    StudentActivity.objects.create(
-        student=student,
-        user=user,
-        action=action,
-        description=description,
-    )
 # Parse an Excel cell into a date, or None if it can't be parsed.
 def parse_date(value):
     if pd.isna(value):
@@ -372,6 +364,30 @@ def student_count(request):
         }
     )
 
+# Returns counts for the Dashboard KPI cards
+@api_view(["GET"])
+def student_status_summary(request):
+    queryset = RACStudent.objects.all()
+
+    country = request.GET.get("country")
+    year = request.GET.get("year")
+
+    if country:
+        queryset = queryset.filter(preferred_country=country)
+
+    if year:
+        queryset = queryset.filter(intake_date__year=year)
+
+    counts = queryset.values("status").annotate(count=Count("id"))
+
+    summary = {"active": 0, "inactive": 0, "not_sure": 0}
+    for row in counts:
+        key = row["status"] or "not_sure"
+        if key in summary:
+            summary[key] = row["count"]
+
+    return Response(summary)
+
 # Documents — list/upload for a specific student.
 class StudentDocumentListCreateView(generics.ListCreateAPIView):
     serializer_class = StudentDocumentSerializer
@@ -384,16 +400,11 @@ class StudentDocumentListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         student = get_object_or_404(RACStudent, pk=self.kwargs["student_id"])
-        document = serializer.save(
-            student=student,
-            uploaded_by=self.request.user,
-        )
-        log_activity(
-            student, self.request.user, "document_uploaded",
-            f"{self.request.user.email} uploaded a document"
-            f"{f' ({document.document_type})' if document.document_type else ''}."
-        )
-
+        serializer.save(
+                student=student,
+                uploaded_by=self.request.user,
+            )
+        
 # Documents — delete. Restricted to whoever uploaded it, since there are no user roles/permissions in this app yet to base broader access on.
 class StudentDocumentDeleteView(generics.DestroyAPIView):
     serializer_class = StudentDocumentSerializer
@@ -415,10 +426,6 @@ class StudentCommentListCreateView(generics.ListCreateAPIView):
         serializer.save(
             student=student,
             user=self.request.user,
-        )
-        log_activity(
-            student, self.request.user, "comment_added",
-            f"{self.request.user.email} added a comment."
         )
 
 # Comments — edit/delete. 
