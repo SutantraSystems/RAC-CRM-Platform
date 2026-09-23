@@ -72,21 +72,19 @@ export default function StudentDetails() {
         Back to Students
       </button>
 
-      <div className="bg-primary-600 rounded-2xl p-4 shadow-card">
-        {/* <p className="text-primary-100 text-xs font-semibold uppercase tracking-wide">
-          Student Details
-        </p> */}
-        <h1 className="font-display font-bold text-2xl text-white mt-1">
-          {student.full_name || "Unnamed Student"}
-        </h1>
+      <div className="pt-2 pb-1">
 
-        <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-sm text-primary-100">
-          {/* <span>{student.email || "No email"}</span>
-          <span>{student.mobile_number || "No phone"}</span> */}
-          {/* <span>{student.preferred_country || "No preferred country"}</span>
-          <span>{student.intake_date || "No intake date"}</span> */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-display font-bold text-3xl text-slate-800 tracking-tight">
+              {student.full_name || "Unnamed Student"}
+            </h1>
+
+          </div>
         </div>
       </div>
+
+
 
       <div className="bg-white rounded-2xl shadow-card">
         <div className="flex border-b border-slate-100 px-4">
@@ -94,11 +92,10 @@ export default function StudentDetails() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
-                activeTab === tab
-                  ? "border-primary-600 text-primary-600"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
+              className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab
+                ? "border-primary-600 text-primary-600"
+                : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
             >
               {tab}
             </button>
@@ -113,7 +110,6 @@ export default function StudentDetails() {
           {activeTab === "Comments" && (
             <CommentsTab studentId={student.id} setToast={setToast} />
           )}
-          {/* {activeTab === "Activity" && <ActivityTab studentId={student.id} />} */}
         </div>
       </div>
     </div>

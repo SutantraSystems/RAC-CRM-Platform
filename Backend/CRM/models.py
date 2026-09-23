@@ -80,6 +80,24 @@ class RACStudent(models.Model):
         null=True,
         blank=True,
     )
+
+    STATUS_ACTIVE = "active"
+    STATUS_INACTIVE = "inactive"
+    STATUS_NOT_SURE = "not_sure"
+
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_INACTIVE, "Inactive"),
+        (STATUS_NOT_SURE, "Not Sure"),
+    ]
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_NOT_SURE,
+        db_index=True,
+    )
+
     created_by = models.EmailField(
         null=True,
         blank=True,

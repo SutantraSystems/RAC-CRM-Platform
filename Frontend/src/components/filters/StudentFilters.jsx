@@ -1,9 +1,14 @@
 import React, { useState } from "react";
 import { Filter, Search } from "lucide-react";
-import { statusList } from "../../data/students";
 import { yearList } from "../../data/students";
-
 import { countryList } from "../../data/students";
+
+const statusOptions = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "not_sure", label: "Not Sure" },
+];
+
 export default function StudentFilters({ onFilter }) {
   const [filters, setFilters] = useState({
     search: "",
@@ -30,7 +35,7 @@ export default function StudentFilters({ onFilter }) {
       </div>
 
       {/* Filter Row */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
         {/* Global Search */}
         <div className="flex flex-col gap-1">
 
@@ -68,7 +73,8 @@ export default function StudentFilters({ onFilter }) {
             ))}
           </select>
         </div>
-        {/* Intake Date */}
+
+        {/* Intake Year */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-500">Year</label>
 
@@ -87,9 +93,8 @@ export default function StudentFilters({ onFilter }) {
           </select>
         </div>
 
-        {/* // future integration */}
         {/* Status */}
-        {/* <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-500">Status</label>
 
           <select
@@ -98,13 +103,13 @@ export default function StudentFilters({ onFilter }) {
             className="input-field w-full"
           >
             <option value="">All Status</option>
-            {statusList.map((s) => (
-              <option key={s} value={s}>
-                {s}
+            {statusOptions.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
               </option>
             ))}
           </select>
-        </div> */}
+        </div>
 
         {/* Apply Button */}
         <button

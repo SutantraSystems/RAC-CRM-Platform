@@ -68,3 +68,13 @@ export const getStudentIds = (params = {}) => {
     params,
   });
 };
+
+// Update just a student's status (reuses the existing PATCH support on the detail endpoint)
+export const updateStudentStatus = (id, status) => {
+  return axiosInstance.patch(`${STUDENTS_URL}/${id}/`, { status });
+};
+
+// Live status counts for the Dashboard KPI cards
+export const getStudentStatusSummary = (params = {}) => {
+  return axiosInstance.get(`${STUDENTS_URL}/status-summary/`, { params });
+};
