@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from accounts.utils import get_short_name
-from .deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
+from .deduplication import DUPLICATE_CHECK_FIELDS, ContactIndex, build_dedup_hash
 from .models import RACStudent,StudentComment,StudentDocument
 
 class RACStudentSerializer(serializers.ModelSerializer):
@@ -35,6 +35,20 @@ class RACStudentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "duplicate": "A student with the same details already exists."
             })
+
+        # Email and mobile number must each be unique across students.
+        others = RACStudent.objects.all()
+        if self.instance is not None:
+            others = others.exclude(pk=self.instance.pk)
+        index = ContactIndex.from_queryset(others)
+
+        errors = {}
+        if index.email_exists(data.get("email")):
+            errors["email"] = "A student with this email already exists."
+        if index.mobile_exists(data.get("mobile_number")):
+            errors["mobile_number"] = "A student with this mobile number already exists."
+        if errors:
+            raise serializers.ValidationError(errors)
 
         return attrs
 

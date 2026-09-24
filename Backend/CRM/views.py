@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .deduplication import build_dedup_hash
+from .deduplication import ContactIndex, build_dedup_hash
 from .models import RACStudent
 from .pagination import StandardPagination
 from .serializers import RACStudentListSerializer, RACStudentSerializer
@@ -37,12 +37,13 @@ class RACStudentViewSet(viewsets.ModelViewSet):
             return RACStudentListSerializer
         return RACStudentSerializer
 
-    # Apply search/country/year filters on top of the base queryset.
+    # Apply search/country/intake/year/status filters on top of the base queryset.
     def get_queryset(self):
         queryset = RACStudent.objects.all().order_by("-created_at","-id")
 
         search = self.request.query_params.get("search")
         country = self.request.query_params.get("country")
+        intake = self.request.query_params.get("intake")
         year = self.request.query_params.get("year")
         status_param = self.request.query_params.get("status")
 
@@ -64,6 +65,11 @@ class RACStudentViewSet(viewsets.ModelViewSet):
                 preferred_country=country
             )
 
+        if intake:
+            queryset = queryset.filter(
+                intake=intake
+            )
+
         if status_param:
             queryset = queryset.filter(
                 status=status_param
@@ -71,7 +77,7 @@ class RACStudentViewSet(viewsets.ModelViewSet):
 
         if year:
             queryset = queryset.filter(
-                intake_date__year=year
+                year=year
             )
         return queryset
 
@@ -82,7 +88,6 @@ class RACStudentViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save()
         
-
 # Turn an Excel cell into a clean string, or None if it's blank/NaN.
 def clean_value(value):
     if pd.isna(value):
@@ -131,6 +136,25 @@ def parse_budget(value):
     except Exception:
         return None
 
+# Parse an Excel cell into one of the valid Intake choices.
+def parse_intake(value):
+    if pd.isna(value):
+        return None
+
+    value = str(value).strip().lower().replace(" ", "_")
+    valid = {"fall", "winter", "spring", "not_sure"}
+    return value if value in valid else None
+
+
+# Parse an Excel cell into a 4-digit year, defaulting to 2026.
+def parse_year(value):
+    if pd.isna(value):
+        return 2026
+    try:
+        return int(float(value))
+    except Exception:
+        return 2026
+
 # Return the first non-empty value found under any of the given column names.
 def get_column_value(row, possible_names):
     for column in possible_names:
@@ -158,6 +182,8 @@ class UploadStudentsAPIView(APIView):
             total_skipped = 0
             total_rows = 0
             total_errors = []
+            duplicate_rows = []
+            contact_index = ContactIndex.from_queryset(RACStudent.objects.all())
 
             for file in files:
                 df = pd.read_excel(file)
@@ -247,8 +273,12 @@ class UploadStudentsAPIView(APIView):
                                 row.get("preferred_country")
                             ),
 
-                            "intake_date": parse_date(
-                                row.get("intake_date")
+                            "intake": parse_intake(
+                                row.get("intake")
+                            ),
+
+                            "year": parse_year(
+                                row.get("year")
                             ),
 
                             "budget": parse_budget(
@@ -298,6 +328,22 @@ class UploadStudentsAPIView(APIView):
                         total_skipped += 1
                         continue
 
+                    # Email and mobile must be unique (DB + earlier rows).
+                    reasons = []
+                    if contact_index.email_exists(data["email"]):
+                        reasons.append("email")
+                    if contact_index.mobile_exists(data["mobile_number"]):
+                        reasons.append("mobile number")
+                    if reasons:
+                        total_skipped += 1
+                        duplicate_rows.append(
+                            f"{file.name} - Row {index + 2}: "
+                            f"{' and '.join(reasons)} already exists."
+                        )
+                        continue
+
+                    contact_index.add(data["email"], data["mobile_number"])
+
                     to_insert.append(
                         RACStudent(
                             **data,
@@ -324,6 +370,7 @@ class UploadStudentsAPIView(APIView):
                     "total_rows": total_rows,
                     "inserted": total_inserted,
                     "skipped_duplicates": total_skipped,
+                    "duplicate_rows": duplicate_rows,
                     "updated": 0,
                     "failed": len(total_errors),
                     "errors": total_errors,
@@ -340,23 +387,27 @@ class UploadStudentsAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-# Returns a count of students matching optional country/status/year filters.
+# Returns a count of students matching optional country/intake/status/year filters.
 @api_view(["GET"])
 def student_count(request):
     queryset = RACStudent.objects.all()
 
     country = request.GET.get("country")
+    intake = request.GET.get("intake")
     year = request.GET.get("year")
     status_param = request.GET.get("status")
 
     if country:
         queryset = queryset.filter(preferred_country=country)
 
+    if intake:
+        queryset = queryset.filter(intake=intake)
+
     if status_param:
         queryset = queryset.filter(status=status_param)
 
     if year:
-        queryset = queryset.filter(intake_date__year=year)
+        queryset = queryset.filter(year=year)
 
     return Response(
         {
@@ -376,7 +427,7 @@ def student_status_summary(request):
         queryset = queryset.filter(preferred_country=country)
 
     if year:
-        queryset = queryset.filter(intake_date__year=year)
+        queryset = queryset.filter(year=year)
 
     counts = queryset.values("status").annotate(count=Count("id"))
 
@@ -462,7 +513,9 @@ def student_ids(request):
 
     search = request.GET.get("search")
     country = request.GET.get("country")
+    intake = request.GET.get("intake")
     year = request.GET.get("year")
+    status_param = request.GET.get("status")
 
     if search:
         queryset = queryset.filter(
@@ -480,8 +533,14 @@ def student_ids(request):
     if country:
         queryset = queryset.filter(preferred_country=country)
 
+    if intake:
+        queryset = queryset.filter(intake=intake)
+
+    if status_param:
+        queryset = queryset.filter(status=status_param)
+
     if year:
-        queryset = queryset.filter(intake_date__year=year)
+        queryset = queryset.filter(year=year)
 
     ids = list(queryset.values_list("id", flat=True))
 

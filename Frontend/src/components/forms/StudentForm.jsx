@@ -1,4 +1,23 @@
 import React, { useState } from "react";
+import YearPicker from "../ui/YearPicker";
+import FilterDropdown from "../ui/FilterDropdown";
+import { countryList } from "../../data/students";
+
+const countryOptions = countryList.map((c) => ({ value: c, label: c }));
+
+const intakeOptions = [
+  { value: "fall", label: "Fall" },
+  { value: "winter", label: "Winter" },
+  { value: "spring", label: "Spring" },
+  { value: "not_sure", label: "Not Sure" },
+];
+
+const Field = ({ label, children }) => (
+  <div className="flex flex-col gap-1">
+    <label className="text-xs font-medium text-slate-500">{label}</label>
+    {children}
+  </div>
+);
 
 export default function StudentForm({
   initialData = {},
@@ -15,20 +34,34 @@ export default function StudentForm({
     academic_details: initialData.academic_details || "",
     test_score: initialData.test_score ?? "",
     preferred_country: initialData.preferred_country || "",
-    intake_date: initialData.intake_date || "",
+    intake: initialData.intake || "",
+    year: initialData.year || 2026,
     budget: initialData.budget ?? "",
     work_experience: initialData.work_experience || "",
     address: initialData.address || "",
     parent_name: initialData.parent_name || "",
   });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors((prev) => ({ ...prev, [e.target.name]: undefined }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleFieldChange = (key, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const payload = {};
@@ -42,7 +75,7 @@ export default function StudentForm({
 
       if (
         value !== null &&
-        (key === "test_score" || key === "budget")
+        (key === "test_score" || key === "budget" || key === "year")
       ) {
         value = Number(value);
       }
@@ -50,149 +83,177 @@ export default function StudentForm({
       payload[key] = value;
     });
 
-    console.log("Payload:", payload);
-
-    onSubmit(payload);
+    setSaving(true);
+    // onSubmit may resolve to { field: "message" } when the server rejects it.
+    const errors = await onSubmit(payload);
+    setSaving(false);
+    setFieldErrors(errors || {});
   };
 
   return (
-    //  MODAL WRAPPER
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3">
-
-      {/* MODAL BOX */}
-      <div className="bg-white w-full max-w-xl rounded-xl shadow-xl border border-slate-200">
-
-        {/* HEADER */}
-        <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 rounded-t-xl">
-          <h2 className="text-base font-semibold text-slate-800">
-            {initialData.id ? "Edit Student" : "Add Student"}
-          </h2>
-        </div>
-
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-3">
+    // The modal, header and close button are provided by the parent (Students.jsx).
+    <form onSubmit={handleSubmit} className="space-y-3">
 
           {/* ROW 1 */}
           <div className="grid grid-cols-3 gap-2">
-            <input
-              name="full_name"
-              placeholder="Full Name"
-              value={formData.full_name}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-            />
+            <Field label="Full Name">
+              <input
+                name="full_name"
+                placeholder="e.g. John Mathew"
+                value={formData.full_name}
+                onChange={handleChange}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </Field>
 
-            <input
-              type="date"
-              name="dob"
-              value={formData.dob}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
+            <Field label="Date of Birth">
+              <input
+                type="date"
+                name="dob"
+                value={formData.dob}
+                onChange={handleChange}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
+              />
+            </Field>
 
-            <input
-              name="mobile_number"
-              placeholder="Mobile"
-              value={formData.mobile_number}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
+            <Field label="Mobile Number">
+              <input
+                name="mobile_number"
+                placeholder="e.g. 9876543210"
+                value={formData.mobile_number}
+                onChange={handleChange}
+                className={`px-3 py-2 text-sm border rounded-lg ${fieldErrors.mobile_number ? "border-red-400" : "border-slate-200"}`}
+              />
+              {fieldErrors.mobile_number && (
+                <p className="text-xs text-red-500">{fieldErrors.mobile_number}</p>
+              )}
+            </Field>
           </div>
 
           {/* ROW 2 */}
           <div className="grid grid-cols-3 gap-2">
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
+            <Field label="Email">
+              <input
+                type="email"
+                name="email"
+                placeholder="e.g. john@email.com"
+                value={formData.email}
+                onChange={handleChange}
+                className={`px-3 py-2 text-sm border rounded-lg ${fieldErrors.email ? "border-red-400" : "border-slate-200"}`}
+              />
+              {fieldErrors.email && (
+                <p className="text-xs text-red-500">{fieldErrors.email}</p>
+              )}
+            </Field>
 
-            />
+            <Field label="Passport Number">
+              <input
+                name="passport_number"
+                placeholder="e.g. P1234567"
+                value={formData.passport_number}
+                onChange={handleChange}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
+              />
+            </Field>
 
-            <input
-              name="passport_number"
-              placeholder="Passport"
-              value={formData.passport_number}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
-
-            <input
-              name="preferred_country"
-              placeholder="Country"
-              value={formData.preferred_country}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
+            <Field label="Preferred Country">
+              <FilterDropdown
+                value={formData.preferred_country}
+                onChange={(val) => handleFieldChange("preferred_country", val)}
+                options={countryOptions}
+                allLabel="Select Country"
+              />
+            </Field>
           </div>
 
           {/* ROW 3 */}
-          <div className="grid grid-cols-3 gap-2">
-            <input
-              type="number"
-              name="test_score"
-              placeholder="Score"
-              value={formData.test_score}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Test Score">
+              <input
+                type="number"
+                name="test_score"
+                placeholder="e.g. 7.5"
+                value={formData.test_score}
+                onChange={handleChange}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
+              />
+            </Field>
 
-            <input
-              type="date"
-              name="intake_date"
-              value={formData.intake_date}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
+            <Field label="Budget">
+              <input
+                type="number"
+                name="budget"
+                placeholder="e.g. 500000"
+                value={formData.budget}
+                onChange={handleChange}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
+              />
+            </Field>
+          </div>
 
-            <input
-              type="number"
-              name="budget"
-              placeholder="Budget"
-              value={formData.budget}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
+          {/* ROW 3b — Intake & Year */}
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Intake">
+              <FilterDropdown
+                value={formData.intake}
+                onChange={(val) => handleFieldChange("intake", val)}
+                options={intakeOptions}
+                allLabel="Select Intake"
+              />
+            </Field>
+
+            <Field label="Year">
+              <YearPicker
+                value={formData.year}
+                onChange={(year) => handleFieldChange("year", year)}
+              />
+            </Field>
           </div>
 
           {/* ROW 4 */}
           <div className="grid grid-cols-3 gap-2">
-            <input
-              name="parent_name"
-              placeholder="Parent"
-              value={formData.parent_name}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
+            <Field label="Parent Name">
+              <input
+                name="parent_name"
+                placeholder="e.g. Mary Mathew"
+                value={formData.parent_name}
+                onChange={handleChange}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
+              />
+            </Field>
 
-            <input
-              name="academic_details"
-              placeholder="Academic"
-              value={formData.academic_details}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
+            <Field label="Academic Details">
+              <input
+                name="academic_details"
+                placeholder="e.g. B.Sc Computer Science"
+                value={formData.academic_details}
+                onChange={handleChange}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
+              />
+            </Field>
 
-            <input
-              name="work_experience"
-              placeholder="Experience"
-              value={formData.work_experience}
-              onChange={handleChange}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-            />
+            <Field label="Work Experience">
+              <input
+                name="work_experience"
+                placeholder="e.g. 2 years"
+                value={formData.work_experience}
+                onChange={handleChange}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
+              />
+            </Field>
           </div>
 
           {/* ADDRESS */}
-          <textarea
-            name="address"
-            placeholder="Address"
-            value={formData.address}
-            onChange={handleChange}
-            rows={3}
-            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg resize-none"
-          />
+          <Field label="Address">
+            <textarea
+              name="address"
+              placeholder="Full address"
+              value={formData.address}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg resize-none"
+            />
+          </Field>
 
           {/* BUTTONS */}
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
@@ -207,15 +268,14 @@ export default function StudentForm({
 
             <button
               type="submit"
-              className="px-4 py-2 text-sm btn-primary text-white rounded-lg hover:btn-primary-hover"
+              disabled={saving}
+              className="px-4 py-2 text-sm btn-primary text-white rounded-lg hover:btn-primary-hover disabled:opacity-60"
             >
-              Save Student
+              {saving ? "Saving..." : "Save Student"}
             </button>
 
           </div>
 
-        </form>
-      </div>
-    </div>
+    </form>
   );
 }

@@ -52,10 +52,30 @@ class RACStudent(models.Model):
         blank=True,
         db_index=True,
     )
+    
+    INTAKE_FALL = "fall"
+    INTAKE_WINTER = "winter"
+    INTAKE_SPRING = "spring"
+    INTAKE_NOT_SURE = "not_sure"
 
-    intake_date = models.DateField(
+    INTAKE_CHOICES = [
+        (INTAKE_FALL, "Fall"),
+        (INTAKE_WINTER, "Winter"),
+        (INTAKE_SPRING, "Spring"),
+        (INTAKE_NOT_SURE, "Not Sure"),
+    ]
+
+    intake = models.CharField(
+        max_length=20,
+        choices=INTAKE_CHOICES,
         null=True,
         blank=True,
+    )
+
+    year = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        default=2026,
     )
 
     budget = models.DecimalField(
@@ -196,4 +216,3 @@ class StudentComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.user} on {self.student}"
-

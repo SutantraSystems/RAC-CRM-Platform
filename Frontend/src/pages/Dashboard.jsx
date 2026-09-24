@@ -10,6 +10,8 @@ import {
   AlertCircle,
   TrendingUp,
   Handshake,
+  Filter,
+  X,
 }
   from "lucide-react";
 import KpiCard from "../components/cards/KpiCard";
@@ -29,7 +31,10 @@ import {
   from "../data/mockData";
 import { getStudentCount, getStudentStatusSummary } from "../services/studentApi";
 import { countryList } from "../data/students";
-import { yearList } from "../data/students";
+import FilterDropdown from "../components/ui/FilterDropdown";
+import YearFilterCalendar from "../components/ui/YearPicker";
+
+const countryOptions = countryList.map((c) => ({ value: c, label: c }));
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -63,12 +68,14 @@ const appStatusColors = {
   Applied: "bg-slate-100 text-slate-700",
 };
 
+const DEFAULT_DATE_FILTERS = {
+  year: null,
+  country: "",
+  status: "",
+};
+
 export default function Dashboard() {
-  const [dateFilters, setDateFilters] = useState({
-    year: "",
-    country: "",
-    status: "",
-  });
+  const [dateFilters, setDateFilters] = useState(DEFAULT_DATE_FILTERS);
   const [studentCount, setStudentCount] = useState(0);
   const [statusSummary, setStatusSummary] = useState({
     active: 0,
@@ -76,21 +83,23 @@ export default function Dashboard() {
     not_sure: 0,
   });
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (filtersOverride) => {
+    const activeFilters = filtersOverride || dateFilters;
+
     try {
       const params = {};
 
-      if (dateFilters.country) {
-        params.country = dateFilters.country;
+      if (activeFilters.country) {
+        params.country = activeFilters.country;
       }
 
-      if (dateFilters.year) {
-        params.year = dateFilters.year;
+      if (activeFilters.year && activeFilters.year !== "all") {
+        params.year = activeFilters.year;
       }
 
       const countParams = { ...params };
-      if (dateFilters.status) {
-        countParams.status = dateFilters.status;
+      if (activeFilters.status) {
+        countParams.status = activeFilters.status;
       }
 
       const [countRes, summaryRes] = await Promise.all([
@@ -101,19 +110,30 @@ export default function Dashboard() {
       setStudentCount(countRes.data.total_students);
       setStatusSummary(summaryRes.data);
     } catch (err) {
-      console.log("Error fetching dashboard data", err);
+      console.error("Error fetching dashboard data", err);
     }
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData(DEFAULT_DATE_FILTERS);
   }, []);
+
+  const handleFilterChange = (key, value) => {
+    setDateFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleClearFilters = () => {
+    setDateFilters(DEFAULT_DATE_FILTERS);
+    fetchDashboardData(DEFAULT_DATE_FILTERS);
+  };
 
   const kpiValues = {
     totalLeads: studentCount,
-    activeStatusCount: 0,
-    inactiveStatusCount: 0,
-   
+    activeStatusCount: statusSummary.active,
+    inactiveStatusCount: statusSummary.inactive,
   };
 
   return (
@@ -121,46 +141,51 @@ export default function Dashboard() {
       {/* Date filter bar */}
       <div className="bg-white rounded-2xl shadow-card p-5 border border-slate-100">
         <div className="flex flex-wrap items-end gap-3">
-          <select
-            className="input-field self-end"
-            value={dateFilters.country}
-            onChange={(e) =>
-              setDateFilters((prev) => ({
-                ...prev,
-                country: e.target.value,
-              }))
-            }
-          >
-            <option value="">Countries</option>
+          <div className="flex flex-col gap-1 w-[160px]">
+            <label className="text-xs font-medium text-slate-500">Country</label>
+            <FilterDropdown
+              value={dateFilters.country}
+              onChange={(val) => handleFilterChange("country", val)}
+              options={countryOptions}
+              allLabel="All Countries"
+            />
+          </div>
 
-            {countryList.map((country) => (
-              <option key={country} value={country}>
-                {country}
-              </option>
-            ))}
-          </select>
-          <select
-            className="input-field self-end"
-            value={dateFilters.year}
-            onChange={(e) =>
-              setDateFilters((prev) => ({
-                ...prev,
-                year: e.target.value,
-              }))
-            }
-          >
-            <option value="">Year</option>
+          <div className="flex flex-col gap-1 w-[150px]">
+            <label className="text-xs font-medium text-slate-500">Year</label>
+            <YearFilterCalendar
+              value={dateFilters.year}
+              onChange={(val) => handleFilterChange("year", val)}
+            />
+          </div>
 
-            {yearList.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-col gap-1 w-[150px]">
+            <label className="text-xs font-medium text-slate-500">Status</label>
+            <FilterDropdown
+              value={dateFilters.status}
+              onChange={(val) => handleFilterChange("status", val)}
+              options={statusOptions}
+              allLabel="All Status"
+            />
+          </div>
 
-          <button className="btn-primary self-end" onClick={fetchDashboardData}>
-            Apply Filter
-          </button>
+          <div className="flex items-end gap-2">
+            <button
+              className="btn-primary h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
+              onClick={() => fetchDashboardData()}
+            >
+              <Filter size={14} />
+              Apply Filter
+            </button>
+
+            <button
+              className="btn-outline h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
+              onClick={handleClearFilters}
+            >
+              <X size={14} />
+              Clear Filters
+            </button>
+          </div>
         </div>
       </div>
 

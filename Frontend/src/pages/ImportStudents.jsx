@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import {
   Upload,
@@ -269,6 +268,19 @@ export default function ImportStudents() {
               Inserted: {result.inserted}
             </p>
 
+            {result.skipped_duplicates > 0 && (
+              <div className="text-amber-600">
+                <p>Skipped (already exists): {result.skipped_duplicates}</p>
+                {result.duplicate_rows?.length > 0 && (
+                  <ul className="list-disc ml-5 text-sm">
+                    {result.duplicate_rows.map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             {/* <p className="text-blue-600">
               Updated: {result.updated}
             </p> */}
@@ -290,4 +302,3 @@ export default function ImportStudents() {
     </div>
   );
 }
-
