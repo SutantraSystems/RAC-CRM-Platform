@@ -53,7 +53,13 @@ export default function Students() {
   const [toast, setToast] = useState(null);
 
   // Filters state
-  const [filters, setFilters] = useState({});
+  const [filters, setFilters] = useState({
+    search: "",
+    country: "",
+    intake: "",
+    year: "",
+    status: "",
+  });
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -61,9 +67,16 @@ export default function Students() {
     useState(false);
   const [selectingAllMatching, setSelectingAllMatching] =
     useState(false);
+
+  // Delete confirmation state
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] =
     useState(false);
-  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [studentToDelete, setStudentToDelete] =
+    useState(null);
+  const [bulkDeleting, setBulkDeleting] =
+    useState(false);
+  const [deletingStudent, setDeletingStudent] =
+    useState(false);
 
   // Build parameters for student list
   const buildParams = (pageNumber, filtersData) => {
@@ -79,11 +92,16 @@ export default function Students() {
       params.country = filtersData.country;
     }
 
+    if (filtersData.intake) {
+      params.intake = filtersData.intake;
+    }
+
     if (filtersData.status) {
       params.status = filtersData.status;
     }
 
-    if (filtersData.year) {
+
+    if (filtersData.year && filtersData.year !== "all") {
       params.year = filtersData.year;
     }
 
@@ -102,11 +120,15 @@ export default function Students() {
       params.country = filtersData.country;
     }
 
+    if (filtersData.intake) {
+      params.intake = filtersData.intake;
+    }
+
     if (filtersData.status) {
       params.status = filtersData.status;
     }
 
-    if (filtersData.year) {
+    if (filtersData.year && filtersData.year !== "all") {
       params.year = filtersData.year;
     }
 
@@ -125,8 +147,6 @@ export default function Students() {
       );
 
       const response = await getStudents(params);
-
-      console.log("API Response:", response.data);
 
       setStudents(response.data.data);
       setTotal(response.data.total);
@@ -159,7 +179,14 @@ export default function Students() {
 
   // Handle reset filters
   const handleReset = () => {
-    setFilters({});
+    setFilters({
+      search: "",
+      country: "",
+      intake: "",
+      year: "",
+      status: "",
+    });
+
     setPage(1);
   };
 
@@ -184,7 +211,9 @@ export default function Students() {
   const handleStatusChange = async (id, newStatus) => {
     setStudents((prev) =>
       prev.map((student) =>
-        student.id === id ? { ...student, status: newStatus } : student
+        student.id === id
+          ? { ...student, status: newStatus }
+          : student
       )
     );
 
@@ -203,21 +232,24 @@ export default function Students() {
         message: `Status updated to ${statusLabel} successfully.`,
       });
     } catch (error) {
-      console.error("Failed to update status:", error);
+      console.error(
+        "Failed to update status:",
+        error
+      );
 
       setToast({
         type: "error",
-        message: "Failed to update status. Please try again.",
+        message:
+          "Failed to update status. Please try again.",
       });
 
       fetchStudents(page, filters);
     }
   };
+
   // Save student
   const handleSave = async (formData) => {
     try {
-      console.log("Submitting:", formData);
-
       if (selectedStudent) {
         await updateStudent(
           selectedStudent.id,
@@ -246,58 +278,61 @@ export default function Students() {
         error
       );
 
-      console.log(
-        "Backend Response:",
-        error.response?.data
-      );
+      const data = error.response?.data;
 
       setToast({
         type: "error",
         message: getErrorMessage(
-          error.response?.data,
+          data,
           "Failed to save student. Please check the form and try again."
         ),
       });
+
+      // Hand duplicate email / mobile errors back to the form (shown inline).
+      const fieldErrors = {};
+      ["email", "mobile_number"].forEach((key) => {
+        if (data?.[key]) {
+          fieldErrors[key] = Array.isArray(data[key]) ? data[key][0] : data[key];
+        }
+      });
+      return fieldErrors;
     }
   };
 
-  // Delete student
-  const handleDeleteStudent = async (
-    id
-  ) => {
-    const confirmDelete =
-      window.confirm(
-        "Are you sure you want to delete this student?"
-      );
+  // Open single student delete confirmation
 
-    if (!confirmDelete) {
-      return;
-    }
+  const handleDeleteStudent = (studentId) => {
+    const student = students.find(
+      (student) => student.id === studentId
+    );
+
+    if (!student) return;
+
+    setStudentToDelete(student);
+    setShowBulkDeleteConfirm(true);
+  };
+
+  const handleConfirmDeleteStudent = async () => {
+    if (!studentToDelete?.id) return;
 
     try {
-      await deleteStudent(id);
+      setDeletingStudent(true);
 
-      fetchStudents(
-        page,
-        filters
-      );
+      await deleteStudent(studentToDelete.id);
+
+      setShowBulkDeleteConfirm(false);
+      setStudentToDelete(null);
+
+      await fetchStudents(page, filters);
 
       setToast({
         type: "success",
-        message:
-          "Student deleted successfully.",
+        message: "Student deleted successfully.",
       });
     } catch (error) {
-      console.error(
-        "Delete failed:",
-        error
-      );
-
-      setToast({
-        type: "error",
-        message:
-          "Failed to delete student.",
-      });
+      console.error("Delete failed:", error);
+    } finally {
+      setDeletingStudent(false);
     }
   };
 
@@ -462,8 +497,8 @@ export default function Students() {
         setToast({
           type: "success",
           message: `${ids.length} ${ids.length === 1
-              ? "student"
-              : "students"
+            ? "student"
+            : "students"
             } deleted successfully.`,
         });
       } catch (error) {
@@ -483,6 +518,16 @@ export default function Students() {
         setBulkDeleting(false);
       }
     };
+
+  // Close delete confirmation
+  const handleCloseDeleteConfirm = () => {
+    if (bulkDeleting || deletingStudent) {
+      return;
+    }
+
+    setShowBulkDeleteConfirm(false);
+    setStudentToDelete(null);
+  };
 
   const selectedCount =
     selectedIds.size;
@@ -504,6 +549,7 @@ export default function Students() {
 
   return (
     <div className="space-y-2">
+
       {/* Toast */}
       {toast && (
         <Toast
@@ -518,13 +564,15 @@ export default function Students() {
       {/* Filters */}
       <StudentFilters
         onFilter={handleFilter}
-        onReset={handleReset}
+        onClear={handleReset}
       />
 
       {/* Bulk Selection Toolbar */}
       {selectedCount > 0 && (
         <div className="flex items-center justify-between bg-primary-50 border border-primary-100 rounded-2xl px-4 py-3 mb-3">
+
           <div className="flex items-center gap-3">
+
             <div className="flex items-center gap-2 text-primary-700 font-medium text-sm">
               <CheckCircle2 size={16} />
 
@@ -606,9 +654,12 @@ export default function Students() {
       {/* Add / Edit Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-card-hover w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+
+          <div className="bg-white rounded-2xl shadow-card-hover w-full max-w-xl max-h-[90vh] overflow-y-auto">
+
             {/* Modal Header */}
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
+            <div className="flex justify-between items-center px-5 py-3 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
+
               <h2
                 className="text-base font-semibold text-slate-800"
                 style={{
@@ -632,7 +683,8 @@ export default function Students() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6">
+            <div className="p-4">
+
               <StudentForm
                 initialData={
                   selectedStudent || {}
@@ -642,22 +694,26 @@ export default function Students() {
                   setShowForm(false)
                 }
               />
+
             </div>
           </div>
         </div>
       )}
 
-      {/* Bulk Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {showBulkDeleteConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+
           <div
             className="w-full max-w-md rounded-2xl bg-white shadow-2xl"
             onClick={(e) =>
               e.stopPropagation()
             }
           >
+
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+
               <h3
                 className="text-base font-semibold text-slate-800"
                 style={{
@@ -665,20 +721,22 @@ export default function Students() {
                     "'Sora', sans-serif",
                 }}
               >
-                Delete {selectedCount}{" "}
-                {selectedCount === 1
-                  ? "Student"
-                  : "Students"}
-                ?
+                {studentToDelete
+                  ? "Delete Student?"
+                  : `Delete ${selectedCount} ${selectedCount === 1
+                    ? "Student"
+                    : "Students"
+                  }?`}
               </h3>
 
               <button
-                onClick={() =>
-                  setShowBulkDeleteConfirm(
-                    false
-                  )
+                onClick={
+                  handleCloseDeleteConfirm
                 }
-                disabled={bulkDeleting}
+                disabled={
+                  bulkDeleting ||
+                  deletingStudent
+                }
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
               >
                 ✕
@@ -687,7 +745,9 @@ export default function Students() {
 
             {/* Modal Body */}
             <div className="px-6 py-5">
+
               <div className="flex items-start gap-3">
+
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
                   <Trash2
                     size={18}
@@ -696,24 +756,28 @@ export default function Students() {
                 </div>
 
                 <div>
+
                   <p className="text-sm font-medium text-slate-700">
-                    Are you sure you want
-                    to delete the selected
-                    students?
+                    {studentToDelete
+                      ? `Are you sure you want to delete ${studentToDelete.full_name}?`
+                      : "Are you sure you want to delete the selected students?"}
                   </p>
+
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
             <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+
               <button
-                onClick={() =>
-                  setShowBulkDeleteConfirm(
-                    false
-                  )
+                onClick={
+                  handleCloseDeleteConfirm
                 }
-                disabled={bulkDeleting}
+                disabled={
+                  bulkDeleting ||
+                  deletingStudent
+                }
                 className="btn-outline rounded-xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
@@ -721,15 +785,25 @@ export default function Students() {
 
               <button
                 onClick={
-                  handleConfirmBulkDelete
+                  studentToDelete
+                    ? handleConfirmDeleteStudent
+                    : handleConfirmBulkDelete
                 }
-                disabled={bulkDeleting}
+                disabled={
+                  bulkDeleting ||
+                  deletingStudent
+                }
                 className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {bulkDeleting
-                  ? "Deleting..."
-                  : "Delete Students"}
+                {studentToDelete
+                  ? deletingStudent
+                    ? "Deleting..."
+                    : "Delete Student"
+                  : bulkDeleting
+                    ? "Deleting..."
+                    : "Delete Students"}
               </button>
+
             </div>
           </div>
         </div>

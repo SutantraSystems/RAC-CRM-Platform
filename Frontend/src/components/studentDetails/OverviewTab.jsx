@@ -29,7 +29,7 @@ const Section = ({ title, children }) => (
 export default function OverviewTab({ student }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-      
+
       <Section title="Personal Information">
         <Row label="Full Name" value={student.full_name} />
         <Row label="Date of Birth" value={student.dob} />
@@ -44,11 +44,25 @@ export default function OverviewTab({ student }) {
         <Row label="Academic Details" value={student.academic_details} />
         <Row label="Test Score" value={student.test_score} />
         <Row label="Preferred Country" value={student.preferred_country} />
-        <Row label="Intake Date" value={student.intake_date} />
+
+        <Row
+          label="Intake"
+          value={
+            student.intake === "fall"
+              ? "Fall"
+              : student.intake === "winter"
+                ? "Winter"
+                : student.intake === "spring"
+                  ? "Spring"
+                  : "Not Sure"
+          }
+        />
+
+        <Row label="Year" value={student.year} />
+
         <Row label="Budget" value={student.budget} />
         <Row label="Work Experience" value={student.work_experience} />
       </Section>
-
     </div>
   );
 }

@@ -1,5 +1,12 @@
 import React, { useRef, useEffect } from "react";
 import { Edit2, Trash2, Plus, Eye } from "lucide-react";
+import FilterDropdown from "../ui/FilterDropdown";
+
+const statusOptions = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "not_sure", label: "Not Sure" },
+];
 
 export default function StudentsTable({
   data,
@@ -224,33 +231,17 @@ export default function StudentsTable({
                       className="px-2 py-1.5 whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <select
+                      <FilterDropdown
                         value={currentStatus}
-                        onChange={(e) =>
-                          onStatusChange(student.id, e.target.value)
+                        onChange={(newStatus) =>
+                          onStatusChange(student.id, newStatus)
                         }
-                        className="
-                          border
-                          border-slate-200
-                          rounded-xl
-                          px-3
-                          py-1.5
-                          text-sm
-                          text-slate-700
-                          bg-white
-                          transition-all
-                          hover:border-slate-300
-                          focus:outline-none
-                          focus:ring-2
-                          focus:ring-primary-200
-                          focus:border-primary-400
-                          cursor-pointer
-                        "
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="not_sure">Not Sure</option>
-                      </select>
+                        options={statusOptions}
+                        showAllOption={false}
+                        fixedMenu
+                        className="w-32"
+                        buttonClassName="!px-3 !py-1.5"
+                      />
                     </td>
 
                     {/* Actions */}

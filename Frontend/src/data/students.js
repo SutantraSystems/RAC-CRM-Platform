@@ -222,10 +222,6 @@ export const courseList = ["Computer Science", "Engineering", "Business", "Medic
 export const statusList = ["Active", "In Progress", "Applied", "Visa Approved", "Closed"];
 
 export const yearList = [
-  "2022",
-  "2023",
-  "2024",
-  "2025",
   "2026",
   "2027",
   "2028",

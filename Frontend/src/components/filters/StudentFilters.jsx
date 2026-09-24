@@ -1,7 +1,17 @@
 import React, { useState } from "react";
-import { Filter, Search } from "lucide-react";
-import { yearList } from "../../data/students";
+import { Filter, Search, X } from "lucide-react";
 import { countryList } from "../../data/students";
+import FilterDropdown from "../ui/FilterDropdown";
+import YearFilterCalendar from "../ui/YearPicker";
+
+const countryOptions = countryList.map((c) => ({ value: c, label: c }));
+
+const intakeOptions = [
+  { value: "fall", label: "Fall" },
+  { value: "winter", label: "Winter" },
+  { value: "spring", label: "Spring" },
+  { value: "not_sure", label: "Not Sure" },
+];
 
 const statusOptions = [
   { value: "active", label: "Active" },
@@ -9,13 +19,16 @@ const statusOptions = [
   { value: "not_sure", label: "Not Sure" },
 ];
 
-export default function StudentFilters({ onFilter }) {
-  const [filters, setFilters] = useState({
-    search: "",
-    country: "",
-    status: "",
-    year: "",
-  });
+const DEFAULT_FILTERS = {
+  search: "",
+  country: "",
+  intake: "",
+  year: null,
+  status: "",
+};
+
+export default function StudentFilters({ onFilter, onClear }) {
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const handleChange = (key, value) => {
     setFilters((prev) => ({
@@ -26,6 +39,11 @@ export default function StudentFilters({ onFilter }) {
 
   const handleApply = () => onFilter(filters);
 
+  const handleClear = () => {
+    setFilters(DEFAULT_FILTERS);
+    onClear?.();
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-card pt-2 px-3 pb-2 mb-2 border border-slate-100">
       {/* Heading */}
@@ -34,11 +52,11 @@ export default function StudentFilters({ onFilter }) {
         <h3 className="font-semibold text-slate-600 text-sm">Apply Filters</h3>
       </div>
 
-      {/* Filter Row */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-        {/* Global Search */}
-        <div className="flex flex-col gap-1">
+      {/* Filter Row - Single Line */}
+      <div className="flex items-end gap-3 whitespace-nowrap">
 
+        {/* Global Search */}
+        <div className="flex flex-col flex-1 min-w-0">
           <div className="relative">
             <Search
               size={14}
@@ -47,7 +65,7 @@ export default function StudentFilters({ onFilter }) {
 
             <input
               type="text"
-              placeholder="Search anything..."
+              placeholder="Search "
               value={filters.search}
               onChange={(e) => handleChange("search", e.target.value)}
               className="input-field w-full pl-9"
@@ -55,71 +73,65 @@ export default function StudentFilters({ onFilter }) {
           </div>
         </div>
 
-        {/* Country Filter */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-500">Country</label>
-
-          <select
+        {/* Country */}
+        <div className="w-[145px] shrink-0">
+          <FilterDropdown
             value={filters.country}
-            onChange={(e) => handleChange("country", e.target.value)}
-            className="input-field w-full"
-          >
-            <option value="">All Countries</option>
-
-            {countryList.map((country) => (
-              <option key={country} value={country}>
-                {country}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleChange("country", val)}
+            options={countryOptions}
+            allLabel="All Countries"
+          />
         </div>
 
-        {/* Intake Year */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-500">Year</label>
+        {/* Intake */}
+        <div className="w-[135px] shrink-0">
+          <FilterDropdown
+            value={filters.intake}
+            onChange={(val) => handleChange("intake", val)}
+            options={intakeOptions}
+            allLabel="All Intakes"
+          />
+        </div>
 
-          <select
+        {/* Year */}
+        <div className="w-[135px] shrink-0">
+          <YearFilterCalendar
             value={filters.year}
-            onChange={(e) => handleChange("year", e.target.value)}
-            className="input-field w-full"
-          >
-            <option value="">All Years</option>
-
-            {yearList.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
+            onChange={(year) => handleChange("year", year)}
+          />
         </div>
 
         {/* Status */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-500">Status</label>
-
-          <select
+        <div className="w-[135px] shrink-0">
+          <FilterDropdown
             value={filters.status}
-            onChange={(e) => handleChange("status", e.target.value)}
-            className="input-field w-full"
-          >
-            <option value="">All Status</option>
-            {statusOptions.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleChange("status", val)}
+            options={statusOptions}
+            allLabel="All Status"
+          />
         </div>
 
-        {/* Apply Button */}
-        <button
-          onClick={handleApply}
-          className="btn-primary h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
-        >
-          <Filter size={14} />
-          Apply Filter
-        </button>
+        {/* Apply + Clear */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleApply}
+            className="btn-primary h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <Filter size={14} />
+            Apply Filter
+          </button>
+
+          <button
+            onClick={handleClear}
+            className="btn-outline h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <X size={14} />
+            Clear
+          </button>
+        </div>
+
       </div>
+
     </div>
   );
 }
