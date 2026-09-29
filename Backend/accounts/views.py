@@ -4,8 +4,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer,ResetPasswordSerializer
-from .utils import get_short_name
+from .serializers import RegisterSerializer,ResetPasswordSerializer,UpdateProfileSerializer
+from .utils import get_short_name,get_display_name
 from django.middleware.csrf import get_token
 from rest_framework.decorators import api_view, permission_classes
 
@@ -28,7 +28,7 @@ class RegisterView(APIView):
                         "username": user.username,
                         "email": user.email,
                         "full_name": user.first_name,
-                        "short_name": get_short_name(user.first_name),
+                        "short_name": get(user.first_name),
                     }
                 },
                 status=status.HTTP_201_CREATED
@@ -77,7 +77,7 @@ class LoginView(APIView):
                 "email": user.email,
                 "username": user.username,
                 "full_name": user.first_name,
-                "short_name": get_short_name(user.first_name),
+                "short_name": get_display_name(user),
             }
         })
 
@@ -94,15 +94,35 @@ class LogoutView(APIView):
 class MeView(APIView):
 
     permission_classes = [IsAuthenticated]
-    def get(self, request):
-        user = request.user
-        return Response({
+
+    def _user_payload(self, user):
+        return {
             "id": user.id,
             "email": user.email,
             "username": user.username,
             "full_name": user.first_name,
-            "short_name": get_short_name(user.first_name),
-        })
+            "short_name": get_display_name(user),
+        }
+
+    def get(self, request):
+        return Response(self._user_payload(request.user))
+
+    # Update the logged-in user's own name. The user is always taken
+    # from the session, never from the request body.
+    def patch(self, request):
+        serializer = UpdateProfileSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = request.user
+            user.first_name = serializer.validated_data["full_name"]
+            user.save(update_fields=["first_name"])
+
+            return Response(self._user_payload(user))
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 @api_view(["GET"])
 @permission_classes([AllowAny])

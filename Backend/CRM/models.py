@@ -52,7 +52,6 @@ class RACStudent(models.Model):
         blank=True,
         db_index=True,
     )
-    
     INTAKE_FALL = "fall"
     INTAKE_WINTER = "winter"
     INTAKE_SPRING = "spring"
@@ -101,14 +100,27 @@ class RACStudent(models.Model):
         blank=True,
     )
 
-    STATUS_ACTIVE = "active"
-    STATUS_INACTIVE = "inactive"
+    # Lead status / application stage. The order below is the pipeline order:
+    # "interested" -> ... -> "visa_granted". "not_interested" and "not_sure"
+    # are off-track states (the stage tracker is disabled for them).
+    STATUS_NOT_INTERESTED = "not_interested"
+    STATUS_INTERESTED = "interested"
     STATUS_NOT_SURE = "not_sure"
+    STATUS_SHORTLISTING_DONE = "shortlisting_done"
+    STATUS_DOCS_SHARED = "docs_shared"
+    STATUS_APPLIED = "applied"
+    STATUS_DEPOSIT_PAID = "deposit_paid"
+    STATUS_VISA_GRANTED = "visa_granted"
 
     STATUS_CHOICES = [
-        (STATUS_ACTIVE, "Active"),
-        (STATUS_INACTIVE, "Inactive"),
+        (STATUS_NOT_INTERESTED, "Not Interested"),
+        (STATUS_INTERESTED, "Interested"),
         (STATUS_NOT_SURE, "Not Sure"),
+        (STATUS_SHORTLISTING_DONE, "Shortlisting Done"),
+        (STATUS_DOCS_SHARED, "Docs Shared"),
+        (STATUS_APPLIED, "Applied"),
+        (STATUS_DEPOSIT_PAID, "Deposit Paid"),
+        (STATUS_VISA_GRANTED, "Visa Granted"),
     ]
 
     status = models.CharField(

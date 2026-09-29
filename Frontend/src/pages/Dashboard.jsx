@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Users,
-  Target,
   FileText,
   ShieldCheck,
   Award,
@@ -30,35 +28,11 @@ import {
 }
   from "../data/mockData";
 import { getStudentCount, getStudentStatusSummary } from "../services/studentApi";
-import { countryList } from "../data/students";
+import { countryList, STATUS_OPTIONS } from "../data/students";
 import FilterDropdown from "../components/ui/FilterDropdown";
 import YearFilterCalendar from "../components/ui/YearPicker";
 
 const countryOptions = countryList.map((c) => ({ value: c, label: c }));
-
-const statusOptions = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-  { value: "not_sure", label: "Not Sure" },
-];
-
-const kpiConfig = [
-  {
-    key: "totalLeads",
-    title: "Total Leads",
-    icon: Target,
-  },
-  {
-    key: "activeStatusCount",
-    title: "Active Students",
-    icon: Users,
-  },
-  {
-    key: "inactiveStatusCount",
-    title: "Inactive Students",
-    icon: Users,
-  },
-];
 
 const appStatusColors = {
   "Offer Received": "bg-green-100 text-green-700",
@@ -77,11 +51,11 @@ const DEFAULT_DATE_FILTERS = {
 export default function Dashboard() {
   const [dateFilters, setDateFilters] = useState(DEFAULT_DATE_FILTERS);
   const [studentCount, setStudentCount] = useState(0);
-  const [statusSummary, setStatusSummary] = useState({
-    active: 0,
-    inactive: 0,
-    not_sure: 0,
-  });
+  const [statusSummary, setStatusSummary] = useState({});
+  // Status the cards are currently filtered by (set when Apply Filter runs).
+  const [appliedStatus, setAppliedStatus] = useState("");
+  // true once Apply Filter has been clicked; false on load and after Clear Filters.
+  const [filtersApplied, setFiltersApplied] = useState(false);
 
   const fetchDashboardData = async (filtersOverride) => {
     const activeFilters = filtersOverride || dateFilters;
@@ -97,6 +71,9 @@ export default function Dashboard() {
         params.year = activeFilters.year;
       }
 
+      // Total Leads and the status summary both use country + year.
+      // Total Leads additionally applies the Status filter (if any), so that
+      // when one status is selected, Total Leads == that status's own count.
       const countParams = { ...params };
       if (activeFilters.status) {
         countParams.status = activeFilters.status;
@@ -109,6 +86,8 @@ export default function Dashboard() {
 
       setStudentCount(countRes.data.total_students);
       setStatusSummary(summaryRes.data);
+      setAppliedStatus(activeFilters.status || "");
+      setFiltersApplied(!!filtersOverride ? false : true);
     } catch (err) {
       console.error("Error fetching dashboard data", err);
     }
@@ -130,11 +109,20 @@ export default function Dashboard() {
     fetchDashboardData(DEFAULT_DATE_FILTERS);
   };
 
-  const kpiValues = {
-    totalLeads: studentCount,
-    activeStatusCount: statusSummary.active,
-    inactiveStatusCount: statusSummary.inactive,
-  };
+  // Default (no filter applied yet, or Clear Filters was just clicked):
+  // Total Leads + all 8 status cards.
+  // After Apply Filter (any combination of country/year/status): just Total
+  // Leads, whichever filters were used to compute it.
+  const kpiCards = filtersApplied
+    ? [{ key: "total", title: "Total Leads", value: studentCount }]
+    : [
+        { key: "total", title: "Total Leads", value: studentCount },
+        ...STATUS_OPTIONS.map((o) => ({
+          key: o.value,
+          title: o.label,
+          value: statusSummary[o.value] ?? 0,
+        })),
+      ];
 
   return (
     <div className="space-y-6">
@@ -164,7 +152,7 @@ export default function Dashboard() {
             <FilterDropdown
               value={dateFilters.status}
               onChange={(val) => handleFilterChange("status", val)}
-              options={statusOptions}
+              options={STATUS_OPTIONS}
               allLabel="All Status"
             />
           </div>
@@ -190,13 +178,12 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {kpiConfig.map((kpi, i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {kpiCards.map((kpi, i) => (
           <KpiCard
             key={kpi.key}
             title={kpi.title}
-            value={kpiValues[kpi.key]}
-            icon={kpi.icon}
+            value={kpi.value}
             index={i}
           />
         ))}

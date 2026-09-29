@@ -228,3 +228,28 @@ export const yearList = [
   "2029",
   "2030",
 ];
+
+// Lead status / application stage (values match RACStudent.STATUS_CHOICES).
+export const STATUS_OPTIONS = [
+  { value: "not_interested", label: "Not Interested" },
+  { value: "interested", label: "Interested" },
+  { value: "not_sure", label: "Not Sure" },
+  { value: "shortlisting_done", label: "Shortlisting Done" },
+  { value: "docs_shared", label: "Document Shared" },
+  { value: "applied", label: "Applied" },
+  { value: "deposit_paid", label: "Deposit Paid" },
+  { value: "visa_granted", label: "Visa Granted" },
+];
+
+// Progress tracker steps, in order. The tracker is enabled only for these.
+export const STAGE_VALUES = [
+  "interested",
+  "shortlisting_done",
+  "docs_shared",
+  "applied",
+  "deposit_paid",
+  "visa_granted",
+];
+
+export const getStatusLabel = (value) =>
+  STATUS_OPTIONS.find((o) => o.value === value)?.label || "Not Sure";

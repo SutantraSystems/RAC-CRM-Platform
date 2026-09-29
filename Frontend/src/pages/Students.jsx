@@ -4,7 +4,6 @@ import {
   getStudents,
   createStudent,
   updateStudent,
-  updateStudentStatus,
   deleteStudent,
   deleteStudents,
   getStudentIds,
@@ -100,7 +99,7 @@ export default function Students() {
       params.status = filtersData.status;
     }
 
-
+    
     if (filtersData.year && filtersData.year !== "all") {
       params.year = filtersData.year;
     }
@@ -128,7 +127,7 @@ export default function Students() {
       params.status = filtersData.status;
     }
 
-    if (filtersData.year && filtersData.year !== "all") {
+       if (filtersData.year && filtersData.year !== "all") {
       params.year = filtersData.year;
     }
 
@@ -207,46 +206,6 @@ export default function Students() {
     navigate(`/students/${id}`);
   };
 
-  // Update student status
-  const handleStatusChange = async (id, newStatus) => {
-    setStudents((prev) =>
-      prev.map((student) =>
-        student.id === id
-          ? { ...student, status: newStatus }
-          : student
-      )
-    );
-
-    try {
-      await updateStudentStatus(id, newStatus);
-
-      const statusLabel =
-        newStatus === "active"
-          ? "Active"
-          : newStatus === "inactive"
-            ? "Inactive"
-            : "Not Sure";
-
-      setToast({
-        type: "success",
-        message: `Status updated to ${statusLabel} successfully.`,
-      });
-    } catch (error) {
-      console.error(
-        "Failed to update status:",
-        error
-      );
-
-      setToast({
-        type: "error",
-        message:
-          "Failed to update status. Please try again.",
-      });
-
-      fetchStudents(page, filters);
-    }
-  };
-
   // Save student
   const handleSave = async (formData) => {
     try {
@@ -300,17 +259,17 @@ export default function Students() {
   };
 
   // Open single student delete confirmation
-
+  
   const handleDeleteStudent = (studentId) => {
-    const student = students.find(
-      (student) => student.id === studentId
-    );
+  const student = students.find(
+    (student) => student.id === studentId
+  );
 
-    if (!student) return;
+  if (!student) return;
 
-    setStudentToDelete(student);
-    setShowBulkDeleteConfirm(true);
-  };
+  setStudentToDelete(student);
+  setShowBulkDeleteConfirm(true);
+};
 
   const handleConfirmDeleteStudent = async () => {
     if (!studentToDelete?.id) return;
@@ -638,9 +597,6 @@ export default function Students() {
         }
         onViewDetails={
           handleViewDetails
-        }
-        onStatusChange={
-          handleStatusChange
         }
         selectedIds={selectedIds}
         onToggleSelect={

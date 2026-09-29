@@ -202,7 +202,7 @@ export default function StudentForm({
               />
             </Field>
 
-            <Field label="Year">
+            <Field label="Intake Year">
               <YearPicker
                 value={formData.year}
                 onChange={(year) => handleFieldChange("year", year)}

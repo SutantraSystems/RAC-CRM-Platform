@@ -17,6 +17,18 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 
 from .models import RACStudent, StudentDocument, StudentComment
+
+
+def filter_by_status(queryset, status_param):
+    """Filter by status. Not Sure is the catch-all: any student whose status is
+    not one of the other seven (blank, missing, unknown) counts as Not Sure."""
+    if status_param == RACStudent.STATUS_NOT_SURE:
+        others = [
+            value for value, _ in RACStudent.STATUS_CHOICES
+            if value != RACStudent.STATUS_NOT_SURE
+        ]
+        return queryset.exclude(status__in=others)
+    return queryset.filter(status=status_param)
 from .serializers import (
     RACStudentListSerializer,
     RACStudentSerializer,
@@ -71,9 +83,7 @@ class RACStudentViewSet(viewsets.ModelViewSet):
             )
 
         if status_param:
-            queryset = queryset.filter(
-                status=status_param
-            )
+            queryset = filter_by_status(queryset, status_param)
 
         if year:
             queryset = queryset.filter(
@@ -88,6 +98,7 @@ class RACStudentViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save()
         
+
 # Turn an Excel cell into a clean string, or None if it's blank/NaN.
 def clean_value(value):
     if pd.isna(value):
@@ -298,6 +309,9 @@ class UploadStudentsAPIView(APIView):
                             ),
 
                             "created_by": request.user.email,
+
+                            # Uploaded students start as Not Sure.
+                            "status": RACStudent.STATUS_NOT_SURE,
                         }
 
                         parsed_rows.append(
@@ -404,7 +418,7 @@ def student_count(request):
         queryset = queryset.filter(intake=intake)
 
     if status_param:
-        queryset = queryset.filter(status=status_param)
+        queryset = filter_by_status(queryset, status_param)
 
     if year:
         queryset = queryset.filter(year=year)
@@ -431,11 +445,13 @@ def student_status_summary(request):
 
     counts = queryset.values("status").annotate(count=Count("id"))
 
-    summary = {"active": 0, "inactive": 0, "not_sure": 0}
+    # One key per status, all defaulting to 0.
+    summary = {value: 0 for value, _ in RACStudent.STATUS_CHOICES}
     for row in counts:
-        key = row["status"] or "not_sure"
-        if key in summary:
-            summary[key] = row["count"]
+        key = row["status"]
+        if key not in summary:
+            key = RACStudent.STATUS_NOT_SURE  # blank / unknown -> Not Sure
+        summary[key] += row["count"]  # so the statuses always add up to the total
 
     return Response(summary)
 
@@ -537,7 +553,7 @@ def student_ids(request):
         queryset = queryset.filter(intake=intake)
 
     if status_param:
-        queryset = queryset.filter(status=status_param)
+        queryset = filter_by_status(queryset, status_param)
 
     if year:
         queryset = queryset.filter(year=year)

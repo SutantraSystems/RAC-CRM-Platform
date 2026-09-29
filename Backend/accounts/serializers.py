@@ -101,3 +101,17 @@ class ResetPasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data["new_password"])
         user.save()
         return user
+
+class UpdateProfileSerializer(serializers.Serializer):
+
+    full_name = serializers.CharField(max_length=150)
+
+    def validate_full_name(self, value):
+        # Collapse extra spaces so "Merlyn   Deena" is stored as "Merlyn Deena".
+        value = " ".join(value.split())
+
+        if not value:
+            raise serializers.ValidationError(
+                "Full name is required."
+            )
+        return value

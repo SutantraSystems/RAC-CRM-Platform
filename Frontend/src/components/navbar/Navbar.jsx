@@ -11,8 +11,10 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
   const { user, logout } = useAuth();
 
   const email = user?.email || '';
-  const displayName = email ? email.split('@')[0] : 'User';
-  const initials = email ? email.slice(0, 2).toUpperCase() : '??';
+  const displayName = user?.short_name || 'User';
+  const initials = user?.full_name
+    ? user.full_name.trim().split(/\s+/).map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+    : (email ? email.slice(0, 2).toUpperCase() : '??');
 
   const handleLogout = async () => {
     try {

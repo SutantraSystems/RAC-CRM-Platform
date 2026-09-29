@@ -57,3 +57,12 @@ export const deleteStudents = (ids) => {
     data: { ids },
   });
 };
+
+export const updateProfile = async (data) => {
+    const response = await axiosInstance.patch(
+        "/auth/me/",
+        data
+    );
+
+    return response.data;
+};

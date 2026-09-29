@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import Login from "./pages/Login";
@@ -11,6 +11,7 @@ import Navbar from "./components/navbar/Navbar";
 import Sidebar from "./components/sidebar/Sidebar";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+import { useAuth } from "./context/AuthContext";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import StudentDetails from "./pages/StudentDetails";
@@ -62,6 +63,25 @@ const CRMLayout = ({ children }) => {
   );
 };
 
+// Login / register pages: if a session ALREADY existed when the page opened
+// (e.g. reopening the browser on /login), go straight to the app.
+// A login done on this page is not redirected here, so Login can show its
+// success toast and then navigate by itself.
+const PublicOnlyRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  const hadSession = useRef(null);
+
+  if (loading) return <div>Loading...</div>;
+
+  if (hadSession.current === null) {
+    hadSession.current = isAuthenticated;
+  }
+
+  if (hadSession.current) return <Navigate to="/dashboard" replace />;
+
+  return children;
+};
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -76,12 +96,12 @@ const App = () => {
         {/* PUBLIC ROUTES */}
         <Route
           path="/login"
-          element={<Login />}
+          element={<PublicOnlyRoute><Login /></PublicOnlyRoute>}
         />
 
         <Route
           path="/register"
-          element={<Register />}
+          element={<PublicOnlyRoute><Register /></PublicOnlyRoute>}
         />
         <Route
           path="/forgot-password"

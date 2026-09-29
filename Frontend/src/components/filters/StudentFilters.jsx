@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Filter, Search, X } from "lucide-react";
-import { countryList } from "../../data/students";
+import { countryList, STATUS_OPTIONS } from "../../data/students";
 import FilterDropdown from "../ui/FilterDropdown";
 import YearFilterCalendar from "../ui/YearPicker";
 
@@ -10,12 +10,6 @@ const intakeOptions = [
   { value: "fall", label: "Fall" },
   { value: "winter", label: "Winter" },
   { value: "spring", label: "Spring" },
-  { value: "not_sure", label: "Not Sure" },
-];
-
-const statusOptions = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
   { value: "not_sure", label: "Not Sure" },
 ];
 
@@ -51,6 +45,7 @@ export default function StudentFilters({ onFilter, onClear }) {
         <Filter size={16} className="text-primary-600" />
         <h3 className="font-semibold text-slate-600 text-sm">Apply Filters</h3>
       </div>
+
 
       {/* Filter Row - Single Line */}
       <div className="flex items-end gap-3 whitespace-nowrap">
@@ -106,7 +101,7 @@ export default function StudentFilters({ onFilter, onClear }) {
           <FilterDropdown
             value={filters.status}
             onChange={(val) => handleChange("status", val)}
-            options={statusOptions}
+            options={STATUS_OPTIONS}
             allLabel="All Status"
           />
         </div>
@@ -126,11 +121,12 @@ export default function StudentFilters({ onFilter, onClear }) {
             className="btn-outline h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
           >
             <X size={14} />
-            Clear
+            Clear 
           </button>
         </div>
 
       </div>
+
 
     </div>
   );

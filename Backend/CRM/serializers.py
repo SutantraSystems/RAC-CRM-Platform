@@ -10,12 +10,20 @@ class RACStudentSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at", "dedup_hash","created_by"]
         extra_kwargs = {
-            field: {"required": False, "allow_null": True}
-            for field in DUPLICATE_CHECK_FIELDS
+            **{
+                field: {"required": False, "allow_null": True}
+                for field in DUPLICATE_CHECK_FIELDS
+            },
+            # A blank status is accepted and saved as "not_sure" (see validate()).
+            "status": {"required": False, "allow_null": True, "allow_blank": True},
         }
 
     def validate(self, attrs):
-        
+
+        # No status chosen means Not Sure.
+        if "status" in attrs and not attrs["status"]:
+            attrs["status"] = RACStudent.STATUS_NOT_SURE
+
         data = {}
         for field in DUPLICATE_CHECK_FIELDS:
             if field in attrs:
