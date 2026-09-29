@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { getStudentById } from "../services/studentApi";
+import { getStudentById, updateStudentStatus } from "../services/studentApi";
+import { getStatusLabel } from "../data/students";
 import Toast from "../components/ui/Toast";
 import OverviewTab from "../components/studentDetails/OverviewTab";
 import DocumentsTab from "../components/studentDetails/DocumentsTab";
@@ -18,6 +19,28 @@ export default function StudentDetails() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("Overview");
   const [toast, setToast] = useState(null);
+
+  // Save a new status / stage. Updates the screen straight away, then rolls
+  // back if the server rejects it.
+  const handleStatusChange = async (newStatus) => {
+    const previous = student.status;
+    setStudent((prev) => ({ ...prev, status: newStatus }));
+
+    try {
+      await updateStudentStatus(student.id, newStatus);
+      setToast({
+        type: "success",
+        message: `Status updated to ${getStatusLabel(newStatus)}.`,
+      });
+    } catch (err) {
+      console.error("Failed to update status:", err);
+      setStudent((prev) => ({ ...prev, status: previous }));
+      setToast({
+        type: "error",
+        message: "Failed to update status. Please try again.",
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchStudent = async () => {
@@ -103,7 +126,7 @@ export default function StudentDetails() {
         </div>
 
         <div className="p-5">
-          {activeTab === "Overview" && <OverviewTab student={student} />}
+          {activeTab === "Overview" && <OverviewTab student={student} onStatusChange={handleStatusChange} />}
           {activeTab === "Documents" && (
             <DocumentsTab studentId={student.id} setToast={setToast} />
           )}

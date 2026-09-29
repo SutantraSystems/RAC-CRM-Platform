@@ -1,13 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { Edit2, Trash2, Plus, Eye } from "lucide-react";
-import FilterDropdown from "../ui/FilterDropdown";
-
-const statusOptions = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-  { value: "not_sure", label: "Not Sure" },
-];
-
+import { getStatusLabel } from "../../data/students";
 export default function StudentsTable({
   data,
   page,
@@ -18,7 +11,6 @@ export default function StudentsTable({
   onEdit,
   onDelete,
   onViewDetails,
-  onStatusChange,
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
@@ -231,17 +223,9 @@ export default function StudentsTable({
                       className="px-2 py-1.5 whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <FilterDropdown
-                        value={currentStatus}
-                        onChange={(newStatus) =>
-                          onStatusChange(student.id, newStatus)
-                        }
-                        options={statusOptions}
-                        showAllOption={false}
-                        fixedMenu
-                        className="w-32"
-                        buttonClassName="!px-3 !py-1.5"
-                      />
+                      <span className="text-sm font-medium text-slate-700">
+                        {getStatusLabel(currentStatus)}
+                      </span>
                     </td>
 
                     {/* Actions */}

@@ -6,21 +6,34 @@ const axiosInstance = axios.create({
 });
 
 function getCookie(name) {
-    const match = document.cookie.match(
-        new RegExp("(^| )" + name + "=([^;]+)")
-    );
-    return match ? decodeURIComponent(match[2]) : null;
-}
+    const cookies = document.cookie.split(";");
 
-axiosInstance.interceptors.request.use((config) => {
-    const method = (config.method || "get").toLowerCase();
-    if (!["get", "head", "options"].includes(method)) {
-        const csrfToken = getCookie("csrftoken");
-        if (csrfToken) {
-            config.headers["X-CSRFToken"] = csrfToken;
+    for (const cookie of cookies) {
+        const [key, ...value] = cookie.trim().split("=");
+
+        if (key === name) {
+            return decodeURIComponent(value.join("="));
         }
     }
-    return config;
-});
+
+    return null;
+}
+
+axiosInstance.interceptors.request.use(
+    (config) => {
+        const method = (config.method || "get").toLowerCase();
+
+        if (!["get", "head", "options"].includes(method)) {
+            const csrfToken = getCookie("csrftoken");
+
+            if (csrfToken) {
+                config.headers["X-CSRFToken"] = csrfToken;
+            }
+        }
+
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
 
 export default axiosInstance;
