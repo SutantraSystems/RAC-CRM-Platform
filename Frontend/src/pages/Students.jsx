@@ -58,7 +58,7 @@ export default function Students() {
     intake: "",
     year: "",
     status: "",
-    location: "",
+    source_file: "",
   });
 
   // Bulk selection state
@@ -100,9 +100,6 @@ export default function Students() {
       params.status = filtersData.status;
     }
 
-    if (filtersData.location) {
-      params.location = filtersData.location;
-    }
     if (filtersData.source_file) {
       params.source_file = filtersData.source_file;
     }
@@ -134,9 +131,6 @@ export default function Students() {
       params.status = filtersData.status;
     }
 
-    if (filtersData.location) {
-      params.location = filtersData.location;
-    }
     if (filtersData.source_file) {
       params.source_file = filtersData.source_file;
     }
@@ -197,7 +191,7 @@ export default function Students() {
       intake: "",
       year: "",
       status: "",
-      location: "",
+      source_file: "",
     });
 
     setPage(1);
