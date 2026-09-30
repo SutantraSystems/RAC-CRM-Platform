@@ -17,7 +17,55 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 
 from .models import RACStudent, StudentDocument, StudentComment
+import re
+import os
+import re
 
+# Words that are commonly added to file names but are not part of the location.
+_FILENAME_NOISE_WORDS = {
+    "student", "students", "data", "list", "lead", "leads",
+    "sheet", "copy", "final", "new", "rac", "crm", "excel", "file",
+}
+
+
+def location_from_filename(filename):
+    """
+    Guess a location from an uploaded file name.
+    "mumbai.xlsx" -> "Mumbai", "Navi_Mumbai_students (2).xlsx" -> "Navi Mumbai"
+    """
+    if not filename:
+        return None
+
+    stem = os.path.splitext(os.path.basename(filename))[0]
+    stem = re.sub(r"\(\d+\)", " ", stem)          # "(2)" from duplicate downloads
+    stem = re.sub(r"[_\-.]+", " ", stem)            # separators -> spaces
+    words = [
+        w for w in stem.split()
+        if w.lower() not in _FILENAME_NOISE_WORDS and not w.isdigit()
+    ]
+    return " ".join(words).title() or None
+
+
+def apply_location_source_filters(queryset, params):
+    """Apply the location / source_file query params to a queryset."""
+    location = params.get("location")
+    source_file = params.get("source_file")
+    if location:
+        queryset = queryset.filter(location__iexact=location.strip())
+    if source_file:
+        queryset = queryset.filter(source_file=source_file)
+    return queryset
+
+
+def normalize_mobile_number(value):
+    value = clean_value(value)
+
+    if not value:
+        return None
+
+    value = re.sub(r"[^\d+]", "", value)
+
+    return value
 
 def filter_by_status(queryset, status_param):
     """Filter by status. Not Sure is the catch-all: any student whose status is
@@ -58,6 +106,9 @@ class RACStudentViewSet(viewsets.ModelViewSet):
         intake = self.request.query_params.get("intake")
         year = self.request.query_params.get("year")
         status_param = self.request.query_params.get("status")
+        location = self.request.query_params.get("location")
+        source_file = self.request.query_params.get("source_file")
+
 
         if search:
             queryset = queryset.filter(
@@ -89,8 +140,16 @@ class RACStudentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 year=year
             )
-        return queryset
 
+        if location:
+                    queryset = queryset.filter(location__iexact=location)
+
+        if source_file:
+                    queryset = queryset.filter(source_file=source_file)
+
+        return queryset
+    
+        
     # Stamp created_by with the logged-in user's email on manual "Add Student".
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user.email)
@@ -175,35 +234,92 @@ def get_column_value(row, possible_names):
             return value
     return None
 
+def validate_student_field_lengths(data):
+    """
+    Validate Excel data against the actual max_length
+    defined in the RACStudent model.
+    """
+
+    errors = []
+
+    fields_to_validate = [
+        "full_name",
+        "mobile_number",
+        "email",
+        "passport_number",
+        "preferred_country",
+        "intake",
+        "location",
+        "source_file",
+    ]
+
+    for field_name in fields_to_validate:
+
+        value = data.get(field_name)
+
+        if value is None:
+            continue
+
+        field = RACStudent._meta.get_field(field_name)
+
+        max_length = field.max_length
+
+        if max_length is None:
+            continue
+
+        value = str(value)
+
+        if len(value) > max_length:
+
+            errors.append(
+                f"{field_name}: value is {len(value)} characters "
+                f"but maximum allowed is {max_length}. "
+                f"Value: '{value}'"
+            )
+
+    return errors
+
 # Bulk-imports students from one or more uploaded Excel/CSV files.
 class UploadStudentsAPIView(APIView):
 
     def post(self, request):
+
         files = request.FILES.getlist("files")
 
         if not files:
             return Response(
-                {
-                    "error": "No files uploaded"
-                },
+                {"error": "No files uploaded"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
         try:
             total_inserted = 0
             total_skipped = 0
             total_rows = 0
             total_errors = []
             duplicate_rows = []
-            contact_index = ContactIndex.from_queryset(RACStudent.objects.all())
+
+            # Existing database contacts
+            contact_index = ContactIndex.from_queryset(
+                RACStudent.objects.all()
+            )
 
             for file in files:
-                df = pd.read_excel(file)
+
+                try:
+                    df = pd.read_excel(file)
+                except Exception as e:
+                    total_errors.append(
+                        f"{file.name}: Unable to read Excel file - {str(e)}"
+                    )
+                    continue
 
                 df.columns = (
                     df.columns
+                    .astype(str)
                     .str.strip()
                     .str.lower()
-                    .str.replace(" ", "_", regex=False)
+                    .str.replace(r"\s+", "_", regex=True)
                 )
 
                 total_rows += len(df)
@@ -215,8 +331,28 @@ class UploadStudentsAPIView(APIView):
 
                     try:
 
-                        full_name = clean_value(
-                            row.get("full_name")
+                        if row.isna().all():
+                            continue
+
+                        has_data = False
+
+                        for value in row:
+                            if clean_value(value) is not None:
+                                has_data = True
+                                break
+
+                        if not has_data:
+                            continue
+
+                        full_name = get_column_value(
+                            row,
+                            [
+                                "full_name",
+                                "fullname",
+                                "name",
+                                "student_name",
+                                "student_full_name",
+                            ]
                         )
 
                         if not full_name:
@@ -226,36 +362,45 @@ class UploadStudentsAPIView(APIView):
                             )
                             continue
 
-                        email = clean_value(
-                            get_column_value(
-                                row,
-                                [
-                                    "email",
-                                    "email_id",
-                                    "email_address",
-                                    "mail",
-                                ]
-                            )
+                        email = get_column_value(
+                            row,
+                            [
+                                "email",
+                                "email_id",
+                                "email_address",
+                                "mail",
+                            ]
                         )
 
                         if email:
                             email = email.lower()
 
-                        mobile = clean_value(
-                            get_column_value(
-                                row,
-                                [
-                                    "mobile_number",
-                                    "mobile",
-                                    "mobile_no",
-                                    "mobile_no.",
-                                    "phone",
-                                    "phone_number",
-                                    "contact_number",
-                                    "contact",
-                                ]
-                            )
+                        mobile = get_column_value(
+                            row,
+                            [
+                                "mobile_number",
+                                "mobile",
+                                "mobile_no",
+                                "mobile_no.",
+                                "phone",
+                                "phone_number",
+                                "contact_number",
+                                "contact",
+                            ]
                         )
+                        mobile = normalize_mobile_number(mobile)
+                        location = get_column_value(
+                            row,
+                            [
+                                "location",
+                                "city",
+                                "student_location",
+                                "based_in",
+                            ]
+                        )
+
+                        if not location:
+                            location = location_from_filename(file.name)
 
                         data = {
                             "full_name": full_name,
@@ -310,15 +455,31 @@ class UploadStudentsAPIView(APIView):
 
                             "created_by": request.user.email,
 
-                            # Uploaded students start as Not Sure.
+                            # Store original Excel file name
+                            "source_file": file.name,
+
+                            # Store location from Excel
+                            "location": location,
+
+                            # Default imported student status
                             "status": RACStudent.STATUS_NOT_SURE,
                         }
 
+                        field_errors = validate_student_field_lengths(data)
+
+                        if field_errors:
+                            for field_error in field_errors:
+                                 errors.append(
+                                    f"{file.name} - Row {index + 2}: "
+                                    f"{field_error}"
+                                )
+                            continue
                         parsed_rows.append(
                             (index, data)
                         )
 
                     except Exception as e:
+
                         errors.append(
                             f"{file.name} - Row {index + 2}: {str(e)}"
                         )
@@ -328,6 +489,7 @@ class UploadStudentsAPIView(APIView):
 
                 for index, data in parsed_rows:
 
+                    # Create duplicate hash
                     dedup_hash = build_dedup_hash(data)
 
                     if dedup_hash in rows_seen:
@@ -339,25 +501,40 @@ class UploadStudentsAPIView(APIView):
                     if RACStudent.objects.filter(
                         dedup_hash=dedup_hash
                     ).exists():
+
                         total_skipped += 1
                         continue
 
-                    # Email and mobile must be unique (DB + earlier rows).
                     reasons = []
-                    if contact_index.email_exists(data["email"]):
+
+                    if contact_index.email_exists(
+                        data["email"]
+                    ):
                         reasons.append("email")
-                    if contact_index.mobile_exists(data["mobile_number"]):
+
+                    if contact_index.mobile_exists(
+                        data["mobile_number"]
+                    ):
                         reasons.append("mobile number")
+
                     if reasons:
+
                         total_skipped += 1
+
                         duplicate_rows.append(
                             f"{file.name} - Row {index + 2}: "
                             f"{' and '.join(reasons)} already exists."
                         )
+
                         continue
 
-                    contact_index.add(data["email"], data["mobile_number"])
+                    # Add contact to index
+                    contact_index.add(
+                        data["email"],
+                        data["mobile_number"]
+                    )
 
+                    # Prepare database object
                     to_insert.append(
                         RACStudent(
                             **data,
@@ -375,7 +552,10 @@ class UploadStudentsAPIView(APIView):
                         to_insert
                     )
 
-                total_errors.extend(errors)
+                # Add validation errors
+                total_errors.extend(
+                    errors
+                )
 
             return Response(
                 {
@@ -393,6 +573,7 @@ class UploadStudentsAPIView(APIView):
             )
 
         except Exception as e:
+
             return Response(
                 {
                     "success": False,
@@ -423,11 +604,41 @@ def student_count(request):
     if year:
         queryset = queryset.filter(year=year)
 
+    queryset = apply_location_source_filters(queryset, request.GET)
+
     return Response(
         {
             "total_students": queryset.count()
         }
     )
+
+# Student list / filter related views
+@api_view(["GET"])
+def student_locations(request):
+    locations = (
+        RACStudent.objects
+        .exclude(location__isnull=True)
+        .exclude(location="")
+        .values_list("location", flat=True)
+        .distinct()
+        .order_by("location")
+    )
+    return Response({"locations": list(locations)})
+
+@api_view(["GET"])
+def student_source_files(request):
+    files = (
+        RACStudent.objects
+        .exclude(source_file__isnull=True)
+        .exclude(source_file="")
+        .values_list("source_file", flat=True)
+        .distinct()
+        .order_by("source_file")
+    )
+
+    return Response({
+        "source_files": list(files)
+    })
 
 # Returns counts for the Dashboard KPI cards
 @api_view(["GET"])
@@ -557,6 +768,8 @@ def student_ids(request):
 
     if year:
         queryset = queryset.filter(year=year)
+
+    queryset = apply_location_source_filters(queryset, request.GET)
 
     ids = list(queryset.values_list("id", flat=True))
 

@@ -77,3 +77,11 @@ export const updateStudentStatus = (id, status) => {
 export const getStudentStatusSummary = (params = {}) => {
   return axiosInstance.get(`${STUDENTS_URL}/status-summary/`, { params });
 };
+
+export const getStudentLocations = () => {
+  return axiosInstance.get(`${STUDENTS_URL}/locations/`);
+};
+
+export const getStudentSourceFiles = () => {
+  return axiosInstance.get(`${STUDENTS_URL}/source-files/`);
+};

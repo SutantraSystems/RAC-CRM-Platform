@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import YearPicker from "../ui/YearPicker";
 import FilterDropdown from "../ui/FilterDropdown";
 import { countryList } from "../../data/students";
+import { getStudentLocations } from "../../services/studentApi";
 
 const countryOptions = countryList.map((c) => ({ value: c, label: c }));
 
@@ -40,9 +41,21 @@ export default function StudentForm({
     work_experience: initialData.work_experience || "",
     address: initialData.address || "",
     parent_name: initialData.parent_name || "",
+    location: initialData.location || "",
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [locationOptions, setLocationOptions] = useState([]);
+
+  useEffect(() => {
+    getStudentLocations()
+      .then((res) => {
+        setLocationOptions(
+          res.data.locations.map((loc) => ({ value: loc, label: loc }))
+        );
+      })
+      .catch((err) => console.error("Failed to load locations:", err));
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -206,6 +219,18 @@ export default function StudentForm({
               <YearPicker
                 value={formData.year}
                 onChange={(year) => handleFieldChange("year", year)}
+              />
+            </Field>
+          </div>
+
+          {/* ROW 3c — Location */}
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Location">
+              <FilterDropdown
+                value={formData.location}
+                onChange={(val) => handleFieldChange("location", val)}
+                options={locationOptions}
+                allLabel="Select Location"
               />
             </Field>
           </div>
