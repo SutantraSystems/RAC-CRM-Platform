@@ -112,6 +112,7 @@ export default function StudentsTable({
                 "Mobile",
                 "Email",
                 "Status",
+                "Source File",
                 "Actions",
               ].map((col) => (
                 <th
@@ -226,6 +227,11 @@ export default function StudentsTable({
                       <span className="text-sm font-medium text-slate-700">
                         {getStatusLabel(currentStatus)}
                       </span>
+                    </td>
+
+                    {/* Source File */}
+                    <td className="px-2 py-1.5 text-slate-600 whitespace-nowrap">
+                      {student.source_file || "-"}
                     </td>
 
                     {/* Actions */}

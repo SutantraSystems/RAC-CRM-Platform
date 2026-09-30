@@ -3,7 +3,7 @@ import { Filter, Search, X } from "lucide-react";
 import { countryList, STATUS_OPTIONS } from "../../data/students";
 import FilterDropdown from "../ui/FilterDropdown";
 import YearFilterCalendar from "../ui/YearPicker";
-import { getStudentLocations, getStudentSourceFiles } from "../../services/studentApi";
+import { getStudentSourceFiles } from "../../services/studentApi";
 
 const countryOptions = countryList.map((c) => ({ value: c, label: c }));
 
@@ -20,24 +20,13 @@ const DEFAULT_FILTERS = {
   intake: "",
   year: null,
   status: "",
-  location: "",
   source_file: "",
 };
 
 export default function StudentFilters({ onFilter, onClear }) {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [locationOptions, setLocationOptions] = useState([]);
   const [sourceFileOptions, setSourceFileOptions] = useState([]);
 
-  useEffect(() => {
-    getStudentLocations()
-      .then((res) => {
-        setLocationOptions(
-          res.data.locations.map((loc) => ({ value: loc, label: loc }))
-        );
-      })
-      .catch((err) => console.error("Failed to load locations:", err));
-  }, []);
   useEffect(() => {
     getStudentSourceFiles()
       .then((res) => {
@@ -135,27 +124,16 @@ export default function StudentFilters({ onFilter, onClear }) {
           />
         </div>
 
-        {/* Location */}
-        {/* <div className="w-[135px] shrink-0">
+        {/* Source File */}
+        <div className="w-[160px] shrink-0">
           <FilterDropdown
-            value={filters.location}
-            onChange={(val) => handleChange("location", val)}
-            options={locationOptions}
-            allLabel="All Locations"
+            value={filters.source_file}
+            onChange={(val) => handleChange("source_file", val)}
+            options={sourceFileOptions}
+            allLabel="All Source Files"
           />
-        </div> */}
-        <FilterDropdown
-          label="Source File"
-          value={filters.source_file}
-          options={sourceFileOptions}
-          onChange={(value) =>
-            setFilters((prev) => ({
-              ...prev,
-              source_file: value,
-            }))
-          }
-        />
-
+        </div>
+        
         {/* Apply + Clear */}
         <div className="flex items-center gap-2 shrink-0">
           <button
