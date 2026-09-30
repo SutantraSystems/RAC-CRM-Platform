@@ -100,9 +100,6 @@ class RACStudent(models.Model):
         blank=True,
     )
 
-    # Lead status / application stage. The order below is the pipeline order:
-    # "interested" -> ... -> "visa_granted". "not_interested" and "not_sure"
-    # are off-track states (the stage tracker is disabled for them).
     STATUS_NOT_INTERESTED = "not_interested"
     STATUS_INTERESTED = "interested"
     STATUS_NOT_SURE = "not_sure"
@@ -127,6 +124,20 @@ class RACStudent(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default=STATUS_NOT_SURE,
+        db_index=True,
+    )
+
+    location = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    source_file = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
         db_index=True,
     )
 

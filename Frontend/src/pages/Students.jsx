@@ -58,6 +58,7 @@ export default function Students() {
     intake: "",
     year: "",
     status: "",
+    location: "",
   });
 
   // Bulk selection state
@@ -99,7 +100,13 @@ export default function Students() {
       params.status = filtersData.status;
     }
 
-    
+    if (filtersData.location) {
+      params.location = filtersData.location;
+    }
+    if (filtersData.source_file) {
+      params.source_file = filtersData.source_file;
+    }
+
     if (filtersData.year && filtersData.year !== "all") {
       params.year = filtersData.year;
     }
@@ -127,7 +134,13 @@ export default function Students() {
       params.status = filtersData.status;
     }
 
-       if (filtersData.year && filtersData.year !== "all") {
+    if (filtersData.location) {
+      params.location = filtersData.location;
+    }
+    if (filtersData.source_file) {
+      params.source_file = filtersData.source_file;
+    }
+    if (filtersData.year && filtersData.year !== "all") {
       params.year = filtersData.year;
     }
 
@@ -184,6 +197,7 @@ export default function Students() {
       intake: "",
       year: "",
       status: "",
+      location: "",
     });
 
     setPage(1);
@@ -259,17 +273,17 @@ export default function Students() {
   };
 
   // Open single student delete confirmation
-  
+
   const handleDeleteStudent = (studentId) => {
-  const student = students.find(
-    (student) => student.id === studentId
-  );
+    const student = students.find(
+      (student) => student.id === studentId
+    );
 
-  if (!student) return;
+    if (!student) return;
 
-  setStudentToDelete(student);
-  setShowBulkDeleteConfirm(true);
-};
+    setStudentToDelete(student);
+    setShowBulkDeleteConfirm(true);
+  };
 
   const handleConfirmDeleteStudent = async () => {
     if (!studentToDelete?.id) return;

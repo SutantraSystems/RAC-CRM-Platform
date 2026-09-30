@@ -253,6 +253,11 @@ export default function OverviewTab({
             label="Parent Name"
             value={student.parent_name}
           />
+
+          {/* <Row
+            label="Location"
+            value={student.location}
+          /> */}
         </Section>
 
         {/* Academic / Application Information */}
@@ -298,6 +303,11 @@ export default function OverviewTab({
           <Row
             label="Work Experience"
             value={student.work_experience}
+          />
+
+          <Row
+            label="Source File"
+            value={student.source_file || "Manually Added"}
           />
         </Section>
 
