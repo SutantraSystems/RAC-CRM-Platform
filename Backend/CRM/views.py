@@ -8,18 +8,21 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .deduplication import ContactIndex, build_dedup_hash
-from .models import RACStudent
+from .models import RACStudent,StudentReminder
 from .pagination import StandardPagination
-from .serializers import RACStudentListSerializer, RACStudentSerializer
+from .serializers import ( RACStudentListSerializer, RACStudentSerializer,RescheduleSerializer,StudentReminderSerializer,
+ RACStudentListSerializer, RACStudentSerializer, StudentDocumentSerializer, StudentCommentSerializer )
 
-from rest_framework import generics
+from django.db.models import Count
+from rest_framework import generics,status
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 
 from .models import RACStudent, StudentDocument, StudentComment
 import re
 import os
-import re
+from django.utils import timezone
+from rest_framework.exceptions import PermissionDenied
 
 # Words that are commonly added to file names but are not part of the location.
 _FILENAME_NOISE_WORDS = {
@@ -29,16 +32,13 @@ _FILENAME_NOISE_WORDS = {
 
 
 def location_from_filename(filename):
-    """
-    Guess a location from an uploaded file name.
-    "mumbai.xlsx" -> "Mumbai", "Navi_Mumbai_students (2).xlsx" -> "Navi Mumbai"
-    """
+   
     if not filename:
         return None
 
     stem = os.path.splitext(os.path.basename(filename))[0]
-    stem = re.sub(r"\(\d+\)", " ", stem)          # "(2)" from duplicate downloads
-    stem = re.sub(r"[_\-.]+", " ", stem)            # separators -> spaces
+    stem = re.sub(r"\(\d+\)", " ", stem)         
+    stem = re.sub(r"[_\-.]+", " ", stem)           
     words = [
         w for w in stem.split()
         if w.lower() not in _FILENAME_NOISE_WORDS and not w.isdigit()
@@ -68,8 +68,7 @@ def normalize_mobile_number(value):
     return value
 
 def filter_by_status(queryset, status_param):
-    """Filter by status. Not Sure is the catch-all: any student whose status is
-    not one of the other seven (blank, missing, unknown) counts as Not Sure."""
+    """Filter by status. Not Sure is the catch-all: any student whose status is not one of the other seven (blank, missing, unknown) counts as Not Sure."""
     if status_param == RACStudent.STATUS_NOT_SURE:
         others = [
             value for value, _ in RACStudent.STATUS_CHOICES
@@ -77,13 +76,6 @@ def filter_by_status(queryset, status_param):
         ]
         return queryset.exclude(status__in=others)
     return queryset.filter(status=status_param)
-from .serializers import (
-    RACStudentListSerializer,
-    RACStudentSerializer,
-    StudentDocumentSerializer,
-    StudentCommentSerializer
-)
-from django.db.models import Count
 
 # CRUD + search/filter endpoints for RACStudent records.
 class RACStudentViewSet(viewsets.ModelViewSet):
@@ -234,12 +226,8 @@ def get_column_value(row, possible_names):
             return value
     return None
 
+# Validate Excel data against the actual max_lengthdefined in the RACStudent model.
 def validate_student_field_lengths(data):
-    """
-    Validate Excel data against the actual max_length
-    defined in the RACStudent model.
-    """
-
     errors = []
 
     fields_to_validate = [
@@ -774,3 +762,76 @@ def student_ids(request):
     ids = list(queryset.values_list("id", flat=True))
 
     return Response({"ids": ids})
+
+def _reminders():
+    return StudentReminder.objects.select_related(
+        "student", "created_by", "completed_by"
+    )
+
+# List all reminders of one student / add a new one.
+class StudentReminderListCreateView(generics.ListCreateAPIView):
+    serializer_class = StudentReminderSerializer
+
+    def get_queryset(self):
+        return _reminders().filter(student_id=self.kwargs["student_id"])
+
+    def perform_create(self, serializer):
+        student = get_object_or_404(RACStudent, pk=self.kwargs["student_id"])
+        serializer.save(student=student, created_by=self.request.user)
+
+
+# Edit (PATCH/PUT) or delete a reminder.
+class StudentReminderDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = StudentReminderSerializer
+    queryset = _reminders()
+
+    def perform_destroy(self, instance):
+        # Completed reminders are permanent history.
+        if instance.is_completed:
+            raise PermissionDenied(
+                "Completed reminders are kept as history and can't be deleted."
+            )
+        instance.delete()
+
+# Mark a reminder as done. Safe to call twice.
+@api_view(["POST"])
+def reminder_complete(request, pk):
+    reminder = get_object_or_404(_reminders(), pk=pk)
+
+    if reminder.completed_at is None:
+        reminder.completed_at = timezone.now()
+        reminder.completed_by = request.user
+        reminder.save(update_fields=["completed_at", "completed_by", "updated_at"])
+
+    return Response(StudentReminderSerializer(reminder).data)
+
+# Move a reminder to a new (future) date/time.
+@api_view(["POST"])
+def reminder_reschedule(request, pk):
+    reminder = get_object_or_404(_reminders(), pk=pk)
+
+    if reminder.is_completed:
+        return Response(
+            {"detail": "Completed reminders can't be rescheduled."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    serializer = RescheduleSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    reminder.remind_at = serializer.validated_data["remind_at"]
+    reminder.save(update_fields=["remind_at", "updated_at"])
+
+    return Response(StudentReminderSerializer(reminder).data)
+
+# Notification bell: every Due and Overdue reminder (not completed), oldest first, across all students.
+@api_view(["GET"])
+def reminder_notifications(request):
+    now = timezone.now()
+    queryset = _reminders().filter(
+        completed_at__isnull=True,
+        remind_at__lte=now,
+    ).order_by("remind_at", "id")
+
+    data = StudentReminderSerializer(queryset, many=True).data
+    return Response({"count": len(data), "results": data})

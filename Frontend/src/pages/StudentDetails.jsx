@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { getStudentById, updateStudentStatus } from "../services/studentApi";
 import { getStatusLabel } from "../data/students";
@@ -7,8 +7,9 @@ import Toast from "../components/ui/Toast";
 import OverviewTab from "../components/studentDetails/OverviewTab";
 import DocumentsTab from "../components/studentDetails/DocumentsTab";
 import CommentsTab from "../components/studentDetails/CommentsTab";
+import RemindersTab from "../components/studentDetails/RemindersTab";
 
-const TABS = ["Overview", "Documents", "Comments"];
+const TABS = ["Overview", "Documents", "Comments", "Reminders"];
 
 export default function StudentDetails() {
   const { id } = useParams();
@@ -17,11 +18,15 @@ export default function StudentDetails() {
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("Overview");
+  // The tab lives in the URL (?tab=Reminders) so the navbar bell can open the Reminders tab directly, and a refresh keeps the same tab.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = (searchParams.get("tab") || "").toLowerCase();
+  const activeTab = TABS.find((t) => t.toLowerCase() === tabParam) || "Overview";
+  const setActiveTab = (tab) =>
+    setSearchParams(tab === "Overview" ? {} : { tab }, { replace: true });
   const [toast, setToast] = useState(null);
 
-  // Save a new status / stage. Updates the screen straight away, then rolls
-  // back if the server rejects it.
+  // Save a new status / stage. Updates the screen straight away, then rolls back if the server rejects it.
   const handleStatusChange = async (newStatus) => {
     const previous = student.status;
     setStudent((prev) => ({ ...prev, status: newStatus }));
@@ -132,6 +137,9 @@ export default function StudentDetails() {
           )}
           {activeTab === "Comments" && (
             <CommentsTab studentId={student.id} setToast={setToast} />
+          )}
+          {activeTab === "Reminders" && (
+            <RemindersTab studentId={student.id} setToast={setToast} />
           )}
         </div>
       </div>

@@ -44,6 +44,40 @@ export const deleteStudentComment = (commentId) => {
   return axiosInstance.delete(`${STUDENTS_URL}/comments/${commentId}/`);
 };
 
+// ---- Reminders (shared by everyone in RAC; separate from comments) ----
+export const getStudentReminders = (studentId) => {
+  return axiosInstance.get(`${STUDENTS_URL}/${studentId}/reminders/`);
+};
+
+// data: { title, remind_at (ISO string), notes }
+export const addStudentReminder = (studentId, data) => {
+  return axiosInstance.post(`${STUDENTS_URL}/${studentId}/reminders/`, data);
+};
+
+export const updateStudentReminder = (reminderId, data) => {
+  return axiosInstance.patch(`${STUDENTS_URL}/reminders/${reminderId}/`, data);
+};
+
+export const completeStudentReminder = (reminderId) => {
+  return axiosInstance.post(`${STUDENTS_URL}/reminders/${reminderId}/complete/`);
+};
+
+export const rescheduleStudentReminder = (reminderId, remindAt) => {
+  return axiosInstance.post(
+    `${STUDENTS_URL}/reminders/${reminderId}/reschedule/`,
+    { remind_at: remindAt }
+  );
+};
+
+export const deleteStudentReminder = (reminderId) => {
+  return axiosInstance.delete(`${STUDENTS_URL}/reminders/${reminderId}/`);
+};
+
+// Navbar bell: all Due + Overdue reminders across every student.
+export const getReminderNotifications = () => {
+  return axiosInstance.get(`${STUDENTS_URL}/reminders/notifications/`);
+};
+
 // ---- Activity ----
 export const getStudentActivity = (studentId) => {
   return axiosInstance.get(`${STUDENTS_URL}/${studentId}/activity/`);

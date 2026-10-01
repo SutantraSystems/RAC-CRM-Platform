@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from CRM.deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
+from datetime import timedelta
+from django.utils import timezone
 
 class RACStudent(models.Model):
 
@@ -239,3 +241,77 @@ class StudentComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.user} on {self.student}"
+
+class StudentReminder(models.Model):
+
+    STATUS_UPCOMING = "upcoming"
+    STATUS_DUE = "due"
+    STATUS_OVERDUE = "overdue"
+    STATUS_COMPLETED = "completed"
+
+    student = models.ForeignKey(
+        RACStudent,
+        on_delete=models.CASCADE,
+        related_name="reminders",
+    )
+
+    title = models.CharField(max_length=255)
+
+    # One timezone-aware moment (stored in UTC). The browser sends the date and time the user picked (in IST), converted to this moment.
+    remind_at = models.DateTimeField()
+
+    notes = models.TextField(blank=True, default="")
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+
+    # Completed reminders stay as history; completed_at marks them as done.
+    completed_at = models.DateTimeField(null=True, blank=True)
+    completed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "rac_student_reminders"
+        ordering = ["remind_at", "id"]
+        indexes = [
+            models.Index(fields=["completed_at", "remind_at"]),
+        ]
+
+    def __str__(self):
+        return f"Reminder '{self.title}' for {self.student}"
+
+    @staticmethod
+    def due_window():
+        """How long a reminder stays "Due" before it becomes "Overdue"."""
+        return timedelta(
+            minutes=getattr(settings, "REMINDER_DUE_WINDOW_MINUTES", 1440)
+        )
+
+    @property
+    def is_completed(self):
+        return self.completed_at is not None
+
+    def get_status(self, now=None):
+        """Status is worked out from the clock, never stored."""
+        if self.completed_at is not None:
+            return self.STATUS_COMPLETED
+
+        now = now or timezone.now()
+        if self.remind_at > now:
+            return self.STATUS_UPCOMING
+        if now - self.remind_at <= self.due_window():
+            return self.STATUS_DUE
+        return self.STATUS_OVERDUE

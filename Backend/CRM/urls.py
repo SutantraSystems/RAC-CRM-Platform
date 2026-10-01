@@ -1,7 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (RACStudentViewSet, UploadStudentsAPIView, student_count,BulkDeleteStudentsAPIView,student_ids, StudentDocumentListCreateView,
-StudentDocumentDeleteView, StudentCommentListCreateView, StudentCommentDetailView, student_status_summary,student_locations,student_source_files)
+StudentDocumentDeleteView, StudentCommentListCreateView, StudentCommentDetailView, student_status_summary,student_locations,student_source_files,
+StudentReminderListCreateView, StudentReminderDetailView,reminder_complete, reminder_reschedule, reminder_notifications,
+)
 
 router = DefaultRouter()
 
@@ -27,7 +29,13 @@ urlpatterns = [
     path("students/<int:student_id>/comments/", StudentCommentListCreateView.as_view(), name="student-comments"),
     path("students/comments/<int:pk>/", StudentCommentDetailView.as_view(), name="student-comment-detail"),
 
-
+    # Reminders (shared by everyone in RAC). Keep separate from comments.
+    path("students/<int:student_id>/reminders/", StudentReminderListCreateView.as_view(), name="student-reminders"),
+    path("students/reminders/notifications/", reminder_notifications, name="reminder-notifications"),
+    path("students/reminders/<int:pk>/", StudentReminderDetailView.as_view(), name="student-reminder-detail"),
+    path("students/reminders/<int:pk>/complete/", reminder_complete, name="student-reminder-complete"),
+    path("students/reminders/<int:pk>/reschedule/", reminder_reschedule, name="student-reminder-reschedule"),
+    
     # Includes the automatically generated routes from the router for the student CRUD operations.
     path("", include(router.urls)),
    

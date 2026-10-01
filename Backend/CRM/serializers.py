@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from accounts.utils import get_short_name
 from .deduplication import DUPLICATE_CHECK_FIELDS, ContactIndex, build_dedup_hash
-from .models import RACStudent,StudentComment,StudentDocument
+from .models import RACStudent,StudentComment,StudentDocument,StudentReminder
+from django.utils import timezone
 
 class RACStudentSerializer(serializers.ModelSerializer):
 
@@ -99,3 +100,78 @@ class StudentCommentSerializer(serializers.ModelSerializer):
         if obj.user:
             return get_short_name(obj.user.first_name) or obj.user.email
         return None
+
+FUTURE_MESSAGE = "Please select a future date and time."
+
+def _user_name(user):
+    if not user:
+        return None
+    return get_short_name(user.first_name) or user.email
+
+
+class StudentReminderSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+    student_name = serializers.SerializerMethodField()
+    created_by_name = serializers.SerializerMethodField()
+    completed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StudentReminder
+        fields = [
+            "id", "student", "student_name",
+            "title", "remind_at", "notes",
+            "status",
+            "created_by", "created_by_name",
+            "completed_at", "completed_by", "completed_by_name",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = [
+            "id", "student", "created_by",
+            "completed_at", "completed_by",
+            "created_at", "updated_at",
+        ]
+
+    def get_status(self, obj):
+        return obj.get_status()
+
+    def get_student_name(self, obj):
+        return obj.student.full_name or "Unnamed Student"
+
+    def get_created_by_name(self, obj):
+        return _user_name(obj.created_by)
+
+    def get_completed_by_name(self, obj):
+        return _user_name(obj.completed_by)
+
+    def validate_title(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Title is required.")
+        return value
+
+    def validate_remind_at(self, value):
+        # New reminders, and any reminder whose time is being changed, must be in the future. 
+        if self.instance is not None and value == self.instance.remind_at:
+            return value
+        if value <= timezone.now():
+            raise serializers.ValidationError(FUTURE_MESSAGE)
+        return value
+
+    def validate_notes(self, value):
+        return (value or "").strip()
+
+    def validate(self, attrs):
+        # Completed reminders are history: no editing.
+        if self.instance is not None and self.instance.is_completed:
+            raise serializers.ValidationError(
+                "Completed reminders can't be edited."
+            )
+        return attrs
+
+class RescheduleSerializer(serializers.Serializer):
+    remind_at = serializers.DateTimeField()
+
+    def validate_remind_at(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError(FUTURE_MESSAGE)
+        return value

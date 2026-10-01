@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Bell, Settings, User, LogOut, ChevronDown, Search } from 'lucide-react';
+import { Menu, Settings, User, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../ui/NotificationBell';
 
 export default function Navbar({ onToggleSidebar, pageTitle }) {
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -28,22 +28,14 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setProfileOpen(false);
-        setNotifOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const notifications = [
-    { text: "Aanya Sharma received offer from U of T", time: "2m ago", type: "offer" },
-    { text: "New lead: Arjun Patel from Delhi", time: "15m ago", type: "lead" },
-    { text: "Visa approved for Meera Joshi", time: "1h ago", type: "visa" },
-    { text: "Application deadline: 3 students", time: "3h ago", type: "alert" },
-  ];
-
   return (
-    <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
+    <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-50 shadow-sm">
       <div className="flex items-center gap-4">
         <button
           onClick={onToggleSidebar}
@@ -70,35 +62,11 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
         />
       </div> */}
 
-      <div className="flex items-center gap-2" ref={dropdownRef}>
+      <div className="flex items-center gap-2">
+        {/* Reminder notifications (Due + Overdue) */}
+        <NotificationBell />
+
         {/* future integrations */}
-        {/* Notifications */}
-        {/* <div className="relative">
-          <button
-            onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
-            className="p-2 rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-colors relative"
-          >
-            <Bell size={20} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full"></span>
-          </button>
-          {notifOpen && (
-            <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-card-hover border border-slate-100 z-50 overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                <p className="font-semibold text-sm text-slate-800">Notifications</p>
-                <span className="badge bg-primary-100 text-primary-600">{notifications.length} new</span>
-              </div>
-              {notifications.map((n, i) => (
-                <div key={i} className="px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors">
-                  <p className="text-sm text-slate-700">{n.text}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{n.time}</p>
-                </div>
-              ))}
-              <div className="px-4 py-2.5 text-center">
-                <button className="text-xs text-primary-600 font-semibold hover:underline">View all notifications</button>
-              </div>
-            </div>
-          )}
-        </div> */}
 
         {/* Settings */}
         {/* <button className="p-2 rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-colors">
@@ -106,9 +74,9 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
         </button> */}
 
         {/* Profile */}
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button
-            onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
+            onClick={() => setProfileOpen(!profileOpen)}
             className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-primary-50 transition-colors"
           >
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold shadow-sm">
