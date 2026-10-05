@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import Login from "./pages/Login";
@@ -11,6 +11,7 @@ import Navbar from "./components/navbar/Navbar";
 import Sidebar from "./components/sidebar/Sidebar";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+import AuthLoading from "./components/ui/AuthLoading";
 import { useAuth } from "./context/AuthContext";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -37,25 +38,55 @@ const pageTitles = {
 
 
 const CRMLayout = ({ children }) => {
-  const [collapsed, setCollapsed] = useState(false);
+
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 1024
+  );
+
+  const [collapsed, setCollapsed] = useState(isMobile);
+
+  const wasMobile = useRef(isMobile);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const nowMobile = window.innerWidth < 1024;
+      setIsMobile(nowMobile);
+
+      if (wasMobile.current !== nowMobile) {
+        wasMobile.current = nowMobile;
+        setCollapsed(nowMobile);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const location = useLocation();
-  const pageTitle =pageTitles[location.pathname] ||
+  const pageTitle = pageTitles[location.pathname] ||
     (location.pathname.startsWith("/students/") ? "Student Details" : "Dashboard");
+
+  const contentMargin = isMobile
+    ? "ml-0"
+    : collapsed
+      ? "ml-[78px]"
+      : "ml-[220px]";
 
   return (
     <div className="min-h-screen bg-[#faf8f5]">
-      <Sidebar collapsed={collapsed} />
+      <Sidebar
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((prev) => !prev)}
+      />
 
       <div
-        className={`flex flex-col min-h-screen transition-all duration-300 ${collapsed ? "ml-[78px]" : "ml-[220px]"
-          }`}
+        className={`flex flex-col min-h-screen min-w-0 transition-all duration-300 ${contentMargin}`}
       >
         <Navbar
           onToggleSidebar={() => setCollapsed((prev) => !prev)}
           pageTitle={pageTitle}
         />
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 min-w-0 p-3 sm:p-6">
           {children}
         </main>
       </div>
@@ -63,15 +94,10 @@ const CRMLayout = ({ children }) => {
   );
 };
 
-// Login / register pages: if a session ALREADY existed when the page opened
-// (e.g. reopening the browser on /login), go straight to the app.
-// A login done on this page is not redirected here, so Login can show its
-// success toast and then navigate by itself.
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const hadSession = useRef(null);
-
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <AuthLoading />;
 
   if (hadSession.current === null) {
     hadSession.current = isAuthenticated;

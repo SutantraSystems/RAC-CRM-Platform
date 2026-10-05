@@ -3,9 +3,58 @@ import {
   Upload,
   FileSpreadsheet,
   X,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  ListChecks,
 } from "lucide-react";
 import { uploadStudentsExcel } from "../services/studentApi";
 import Toast from "../components/ui/Toast";
+
+const ResultStat = ({ icon: Icon, label, value, tone }) => {
+  const tones = {
+    slate: "bg-slate-50 border-slate-200 text-slate-700",
+    green: "bg-green-50 border-green-200 text-green-700",
+    amber: "bg-amber-50 border-amber-200 text-amber-700",
+    red: "bg-red-50 border-red-200 text-red-700",
+  };
+
+  return (
+    <div className={`rounded-xl border p-3 flex items-center gap-3 min-w-0 ${tones[tone]}`}>
+      <Icon size={20} className="shrink-0" />
+      <div className="min-w-0">
+        <p className="text-xs font-medium opacity-80 break-words">{label}</p>
+        <p className="text-xl font-bold leading-tight">{value}</p>
+      </div>
+    </div>
+  );
+};
+
+const DetailList = ({ title, items, icon: Icon, tone }) => {
+  if (!items || items.length === 0) return null;
+
+  const tones = {
+    amber: "text-amber-700 bg-amber-50 border-amber-200",
+    red: "text-red-700 bg-red-50 border-red-200",
+  };
+
+  return (
+    <div className={`rounded-xl border p-3 sm:p-4 min-w-0 ${tones[tone]}`}>
+      <div className="flex items-center gap-2 mb-2">
+        <Icon size={16} className="shrink-0" />
+        <p className="text-sm font-semibold">
+          {title} ({items.length})
+        </p>
+      </div>
+
+      <ul className="list-disc ml-5 text-sm space-y-1 max-h-72 overflow-y-auto pr-2">
+        {items.map((item, i) => (
+          <li key={i} className="break-words">{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 export default function ImportStudents() {
   const [files, setFiles] = useState([]);
@@ -43,16 +92,33 @@ export default function ImportStudents() {
     if (files.length === 0) return;
 
     setLoading(true);
+    setResult(null);
+    setToast({ type: "info", message: "Upload started..." });
 
     try {
       const res = await uploadStudentsExcel(files);
+      const data = res.data;
 
-      setResult(res.data);
+      setResult(data);
 
-      setToast({
-        type: "success",
-        message: "Students imported successfully!",
-      });
+      if (!data.success) {
+        setToast({
+          type: "error",
+          message: data.error || "Upload failed.",
+        });
+      } else if (data.inserted === 0) {
+        setToast({
+          type: "warning",
+          message:
+            "Upload finished, but no students were added — check the results below.",
+        });
+      } else {
+        setToast({
+          type: "success",
+          message: `Upload successful — ${data.inserted} student${data.inserted === 1 ? "" : "s"
+            } imported.`,
+        });
+      }
     } catch (err) {
       console.error(err);
 
@@ -68,8 +134,13 @@ export default function ImportStudents() {
     }
   };
 
+  const missingFieldErrors =
+    result?.errors?.filter((e) => e.includes("is required")) || [];
+  const otherErrors =
+    result?.errors?.filter((e) => !e.includes("is required")) || [];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Toast */}
       {toast && (
         <Toast
@@ -80,16 +151,16 @@ export default function ImportStudents() {
       )}
 
       {/* HEADER CARD */}
-      <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <Upload size={24} className="text-primary-600" />
+      <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-4 sm:p-6">
+        <div className="flex items-center gap-3 mb-4 sm:mb-5">
+          <Upload size={24} className="text-primary-600 shrink-0" />
 
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
               Import Students
             </h1>
 
-            <p className="text-slate-500">
+            <p className="text-sm sm:text-base text-slate-500">
               Upload Excel files to bulk import student records.
             </p>
           </div>
@@ -102,17 +173,18 @@ export default function ImportStudents() {
             border-dashed
             border-slate-300
             rounded-xl
-            p-10
+            p-5
+            sm:p-10
             text-center
             bg-slate-50/50
           "
         >
           <FileSpreadsheet
             size={60}
-            className="mx-auto text-green-600 mb-4"
+            className="mx-auto text-green-600 mb-3 sm:mb-4 w-12 h-12 sm:w-[60px] sm:h-[60px]"
           />
 
-          <h3 className="text-sm text-slate-500 mt-2">
+          <h3 className="text-sm text-slate-500 mt-2 break-words">
             Choose files from your computer to import student records.
           </h3>
 
@@ -169,7 +241,8 @@ export default function ImportStudents() {
                     items-center
                     justify-between
                     gap-3
-                    px-4
+                    px-3
+                    sm:px-4
                     py-3
                     rounded-lg
                     border
@@ -185,7 +258,7 @@ export default function ImportStudents() {
                     />
 
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">
+                      <p className="text-sm font-medium text-slate-700 truncate" title={file.name}>
                         {file.name}
                       </p>
 
@@ -224,7 +297,7 @@ export default function ImportStudents() {
             </div>
 
             {/* UPLOAD BUTTON */}
-            <div className="flex justify-end mt-5">
+            <div className="flex sm:justify-end mt-5">
               <button
                 type="button"
                 onClick={handleUpload}
@@ -241,7 +314,10 @@ export default function ImportStudents() {
                   disabled:opacity-50
                   disabled:cursor-not-allowed
                   flex
+                  w-full
+                  sm:w-auto
                   items-center
+                  justify-center
                   gap-2
                 "
               >
@@ -256,47 +332,77 @@ export default function ImportStudents() {
 
       {/* IMPORT RESULT */}
       {result && (
-        <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-3">
-            Import Result
-          </h2>
-
-          <div className="space-y-2 text-slate-600">
-            <p>Total Rows: {result.total_rows}</p>
-
-            <p className="text-green-600">
-              Inserted: {result.inserted}
-            </p>
-
-            {result.skipped_duplicates > 0 && (
-              <div className="text-amber-600">
-                <p>Skipped (already exists): {result.skipped_duplicates}</p>
-                {result.duplicate_rows?.length > 0 && (
-                  <ul className="list-disc ml-5 text-sm">
-                    {result.duplicate_rows.map((d, i) => (
-                      <li key={i}>{d}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+        <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-4 sm:mb-5">
+            {result.inserted > 0 ? (
+              <CheckCircle2 size={20} className="text-green-600" />
+            ) : (
+              <AlertTriangle size={20} className="text-amber-600" />
             )}
-
-            {/* <p className="text-blue-600">
-              Updated: {result.updated}
-            </p> */}
-
-            {result.errors?.length > 0 && (
-              <div className="text-red-500 mt-3">
-                <p>Errors:</p>
-
-                <ul className="list-disc ml-5">
-                  {result.errors.map((e, i) => (
-                    <li key={i}>{e}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <h2 className="text-lg font-semibold text-slate-800">
+              Import Result
+            </h2>
           </div>
+
+          {/* Summary stat cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-5">
+            <ResultStat
+              icon={ListChecks}
+              label="Total Rows"
+              value={result.total_rows}
+              tone="slate"
+            />
+            <ResultStat
+              icon={CheckCircle2}
+              label="Inserted"
+              value={result.inserted}
+              tone="green"
+            />
+            <ResultStat
+              icon={AlertTriangle}
+              label="Duplicates Skipped"
+              value={result.skipped_duplicates}
+              tone="amber"
+            />
+            <ResultStat
+              icon={XCircle}
+              label="Failed Rows"
+              value={result.failed ?? result.errors?.length ?? 0}
+              tone="red"
+            />
+          </div>
+
+          {/* Detailed, categorized breakdowns */}
+          <div className="space-y-3">
+            <DetailList
+              title="Duplicate records skipped"
+              items={result.duplicate_rows}
+              icon={AlertTriangle}
+              tone="amber"
+            />
+
+            <DetailList
+              title="Missing required fields"
+              items={missingFieldErrors}
+              icon={XCircle}
+              tone="red"
+            />
+
+            <DetailList
+              title="Invalid data"
+              items={otherErrors}
+              icon={XCircle}
+              tone="red"
+            />
+          </div>
+
+          {result.inserted === 0 &&
+            result.skipped_duplicates === 0 &&
+            (!result.errors || result.errors.length === 0) && (
+              <p className="text-sm text-slate-500">
+                No students were found in the uploaded file.
+              </p>
+            )}
         </div>
       )}
     </div>

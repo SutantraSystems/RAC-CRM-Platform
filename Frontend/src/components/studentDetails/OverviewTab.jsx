@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Check, FileText, Eye } from "lucide-react";
 import FilterDropdown from "../ui/FilterDropdown";
 
-// DOCUMENT FUNCTIONALITY COMMENTED OUT
 // import { getStudentDocuments } from "../../services/studentDetailsApi";
 
 import {
@@ -12,12 +11,12 @@ import {
 } from "../../data/students";
 
 const Row = ({ label, value }) => (
-  <div className="flex items-start gap-4 px-5 py-3">
-    <p className="text-sm text-slate-600 font-medium w-36 shrink-0">
+  <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:gap-4 px-4 sm:px-5 py-3">
+    <p className="text-sm text-slate-600 font-medium sm:w-36 sm:shrink-0">
       {label}
     </p>
 
-    <p className="text-sm font-semibold text-slate-800 break-words">
+    <p className="min-w-0 text-sm font-semibold text-slate-800 break-words">
       {value || "—"}
     </p>
   </div>
@@ -32,7 +31,7 @@ const Section = ({
   <div
     className={`bg-white rounded-2xl shadow-md border border-slate-300 overflow-hidden ${className}`}
   >
-    <div className="px-5 py-3 border-b border-slate-300 bg-slate-100">
+    <div className="px-4 sm:px-5 py-3 border-b border-slate-300 bg-slate-100">
       <h3 className="font-display font-semibold text-slate-800 text-sm">
         {title}
       </h3>
@@ -41,7 +40,7 @@ const Section = ({
     <div
       className={
         padded
-          ? "p-5"
+          ? "p-4 sm:p-5"
           : "divide-y divide-slate-200"
       }
     >
@@ -50,8 +49,6 @@ const Section = ({
   </div>
 );
 
-// DOCUMENT FUNCTIONALITY COMMENTED OUT
-// Pull a readable file name out of the stored file URL.
 /*
 const getFileName = (url) => {
   if (!url) return "Document";
@@ -66,6 +63,27 @@ const getFileName = (url) => {
 };
 */
 
+const getAllowedStatusOptions = (status) => {
+  const currentIndex = STAGE_VALUES.indexOf(status);
+  const enabled = currentIndex !== -1;
+
+  return STATUS_OPTIONS.filter((opt) => {
+    if (opt.value === "not_interested" || opt.value === "not_sure") {
+      return true;
+    }
+
+    const stageIndex = STAGE_VALUES.indexOf(opt.value);
+    if (stageIndex === -1) return false;
+
+    if (!enabled) {
+      // Not currently in the pipeline — only the first stage can start it.
+      return stageIndex === 0;
+    }
+
+    return stageIndex === currentIndex || stageIndex === currentIndex + 1;
+  });
+};
+
 // Application progress
 const StageTracker = ({
   status,
@@ -77,100 +95,118 @@ const StageTracker = ({
   const enabled = currentIndex !== -1;
 
   return (
-    <div className="bg-white rounded-2xl shadow-md border border-slate-300 p-5">
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
+    <div className="bg-white rounded-2xl shadow-md border border-slate-300 p-4 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-5 sm:mb-6">
+        <div className="min-w-0">
           <h3 className="font-display font-semibold text-slate-800 text-sm">
             Application Progress
           </h3>
 
           <p className="text-xs text-slate-500 mt-1">
             {enabled
-              ? "Click a step to update the stage."
+              ? "Complete each step in order to move forward."
               : `Status is ${getStatusLabel(
                   status
                 )}. Set it to Interested to start tracking progress.`}
           </p>
         </div>
 
-        <div className="w-44 shrink-0">
+        <div className="w-full sm:w-44 sm:shrink-0">
           <FilterDropdown
             value={status}
             onChange={onStatusChange}
-            options={STATUS_OPTIONS}
+            options={getAllowedStatusOptions(status)}
             showAllOption={false}
           />
         </div>
       </div>
 
-      <div className="flex">
-        {STAGE_VALUES.map((value, i) => {
-          const done =
-            enabled && i < currentIndex;
+      <div className="overflow-x-auto overscroll-x-contain px-1 pt-1 pb-2 -mx-1">
+        <div className="flex min-w-[520px] sm:min-w-0">
+          {STAGE_VALUES.map((value, i) => {
+            const done =
+              enabled && i < currentIndex;
 
-          const current =
-            enabled && i === currentIndex;
+            const current =
+              enabled && i === currentIndex;
 
-          const lineActive =
-            enabled && i <= currentIndex;
+            const lineActive =
+              enabled && i <= currentIndex;
 
-          const dot = !enabled
-            ? "bg-slate-100 border-slate-300 text-slate-400"
-            : done
-            ? "bg-green-500 border-green-500 text-white"
-            : current
-            ? "bg-primary-600 border-primary-600 text-white ring-4 ring-primary-200"
-            : "bg-white border-slate-300 text-slate-500 group-hover:border-primary-400";
+            // Only the current step and the very next one are clickable —
+            // you can revisit/undo back to the current step, or advance
+            // exactly one step at a time. No skipping ahead.
+            const clickable =
+              enabled && (i === currentIndex || i === currentIndex + 1);
 
-          return (
-            <button
-              key={value}
-              type="button"
-              disabled={!enabled}
-              onClick={() =>
-                value !== status &&
-                onStatusChange(value)
-              }
-              className={`group relative flex-1 flex flex-col items-center px-1 ${
-                enabled
-                  ? "cursor-pointer"
-                  : "cursor-not-allowed"
-              }`}
-            >
-              {i > 0 && (
-                <span
-                  className={`absolute top-4 -left-1/2 w-full h-0.5 ${
-                    lineActive
-                      ? "bg-green-500"
-                      : "bg-slate-200"
-                  }`}
-                />
-              )}
+            const dot = !enabled
+              ? "bg-slate-100 border-slate-300 text-slate-400"
+              : done
+              ? "bg-green-500 border-green-500 text-white"
+              : current
+              ? "bg-primary-600 border-primary-600 text-white ring-4 ring-primary-200"
+              : clickable
+              ? "bg-white border-primary-300 text-primary-500 group-hover:border-primary-400"
+              : "bg-white border-slate-200 text-slate-300";
 
-              <span
-                className={`relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-semibold transition-colors ${dot}`}
-              >
-                {done ? (
-                  <Check size={14} />
-                ) : (
-                  i + 1
-                )}
-              </span>
-
-              <span
-                className={`mt-2 text-xs text-center leading-tight ${
+            return (
+              <button
+                key={value}
+                type="button"
+                disabled={!clickable}
+                onClick={() =>
+                  clickable &&
+                  value !== status &&
+                  onStatusChange(value)
+                }
+                title={
                   !enabled
-                    ? "text-slate-400"
-                    : current
-                    ? "font-semibold text-slate-800"
-                    : "text-slate-600"
+                    ? undefined
+                    : clickable
+                    ? undefined
+                    : "Complete the previous steps first"
+                }
+                className={`group relative flex-1 flex flex-col items-center px-1 ${
+                  clickable
+                    ? "cursor-pointer"
+                    : "cursor-not-allowed"
                 }`}
               >
-                {getStatusLabel(value)}
-              </span>
-            </button>
-          );
-        })}
+                {i > 0 && (
+                  <span
+                    className={`absolute top-4 -left-1/2 w-full h-0.5 ${
+                      lineActive
+                        ? "bg-green-500"
+                        : "bg-slate-200"
+                    }`}
+                  />
+                )}
+
+                <span
+                  className={`relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-semibold transition-colors ${dot}`}
+                >
+                  {done ? (
+                    <Check size={14} />
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+
+                <span
+                  className={`mt-2 text-xs text-center leading-tight ${
+                    !enabled || !clickable
+                      ? "text-slate-400"
+                      : current
+                      ? "font-semibold text-slate-800"
+                      : "text-slate-600"
+                  }`}
+                >
+                  {getStatusLabel(value)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -180,7 +216,6 @@ export default function OverviewTab({
   student,
   onStatusChange,
 }) {
-  // DOCUMENT FUNCTIONALITY COMMENTED OUT
   /*
   const [documents, setDocuments] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
@@ -209,14 +244,14 @@ export default function OverviewTab({
   */
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       {/* Application Progress */}
       <StageTracker
         status={student.status || "not_sure"}
         onStatusChange={onStatusChange}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 items-start">
         {/* Personal Information */}
         <Section title="Personal Information">
           <Row
@@ -254,10 +289,10 @@ export default function OverviewTab({
             value={student.parent_name}
           />
 
-          {/* <Row
+          <Row
             label="Location"
             value={student.location}
-          /> */}
+          />
         </Section>
 
         {/* Academic / Application Information */}
@@ -312,17 +347,6 @@ export default function OverviewTab({
         </Section>
 
         {/*
-          =====================================================
-          DOCUMENT FUNCTIONALITY COMMENTED OUT
-          =====================================================
-
-          Documents are now handled separately in DocumentsTab.
-
-          The following section previously:
-          - Loaded student documents
-          - Displayed document count
-          - Displayed uploaded documents
-          - Provided a View link for each document
 
         <Section
           title={`Documents${
@@ -378,9 +402,6 @@ export default function OverviewTab({
           )}
         </Section>
 
-          =====================================================
-          END DOCUMENT FUNCTIONALITY
-          =====================================================
         */}
       </div>
     </div>

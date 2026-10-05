@@ -7,7 +7,32 @@ from rest_framework import status
 from .serializers import RegisterSerializer,ResetPasswordSerializer,UpdateProfileSerializer
 from .utils import get_short_name,get_display_name
 from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import SAFE_METHODS
+
+
+def user_payload(user):
+    """Safe, frontend-facing description of a user (never contains secrets)."""
+    return {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "full_name": user.first_name,
+        "short_name": get_display_name(user),
+    }
+
+
+def resolve_login_username(identifier):
+ 
+    identifier = identifier.strip()
+    UserModel = get_user_model()
+    match = (
+        UserModel.objects.filter(email__iexact=identifier).order_by("id").first()
+        or UserModel.objects.filter(username__iexact=identifier).order_by("id").first()
+    )
+    return match.get_username() if match else identifier
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -28,7 +53,7 @@ class RegisterView(APIView):
                         "username": user.username,
                         "email": user.email,
                         "full_name": user.first_name,
-                        "short_name": get(user.first_name),
+                        "short_name": get_display_name(user),
                     }
                 },
                 status=status.HTTP_201_CREATED
@@ -38,16 +63,21 @@ class RegisterView(APIView):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+@method_decorator(never_cache, name="dispatch")
 class LoginView(APIView):
 
     permission_classes = [AllowAny]
 
     def post(self, request):
 
-        email = request.data.get("email")
+        identifier = request.data.get("email") or request.data.get("username")
         password = request.data.get("password")
 
-        if not email or not password:
+        if (
+            not identifier or not password
+            or not isinstance(identifier, str)
+            or not isinstance(password, str)
+        ):
             return Response(
                 {
                     "detail":
@@ -55,10 +85,9 @@ class LoginView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
-        email = email.lower().strip()
         user = authenticate(
             request,
-            username=email,
+            username=resolve_login_username(identifier),
             password=password
         )
         if user is None:
@@ -69,46 +98,44 @@ class LoginView(APIView):
                 },
                 status=status.HTTP_401_UNAUTHORIZED
             )
+        
         login(request, user)
         return Response({
             "message": "Login successful.",
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "username": user.username,
-                "full_name": user.first_name,
-                "short_name": get_display_name(user),
-            }
+            "user": user_payload(user),
         })
 
+@method_decorator(never_cache, name="dispatch")
 class LogoutView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
-        logout(request)
+        logout(request)  # flushes the server-side session row + cookie
         return Response({
             "message": "Logout successful."
         })
 
+@method_decorator(never_cache, name="dispatch")
 class MeView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def _user_payload(self, user):
-        return {
-            "id": user.id,
-            "email": user.email,
-            "username": user.username,
-            "full_name": user.first_name,
-            "short_name": get_display_name(user),
-        }
+        return user_payload(user)
 
     def get(self, request):
-        return Response(self._user_payload(request.user))
+        if not request.user.is_authenticated:
+            return Response({"authenticated": False})
 
-    # Update the logged-in user's own name. The user is always taken
-    # from the session, never from the request body.
+        return Response({
+            "authenticated": True,
+            **self._user_payload(request.user),
+        })
+
     def patch(self, request):
         serializer = UpdateProfileSerializer(data=request.data)
 

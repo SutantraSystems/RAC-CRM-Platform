@@ -110,10 +110,10 @@ export default function DocumentsTab({ studentId, setToast }) {
     <div className="space-y-4">
       <form
         onSubmit={handleUpload}
-        className="flex flex-wrap items-center gap-3 bg-slate-50 rounded-xl p-3"
+        className="flex flex-wrap items-center gap-2 sm:gap-3 bg-slate-50 rounded-xl p-3"
       >
         {/* File Selection */}
-        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+        <div className="flex items-center gap-2 flex-1 min-w-0 basis-full sm:basis-auto sm:min-w-[200px]">
           <label className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white cursor-pointer hover:bg-slate-100 transition-colors shrink-0">
             Choose File
 
@@ -126,14 +126,14 @@ export default function DocumentsTab({ studentId, setToast }) {
           </label>
 
           {file ? (
-            <span className="flex items-center gap-1.5 text-sm text-slate-600 truncate">
-              {file.name}
+            <span className="flex min-w-0 items-center gap-1.5 text-sm text-slate-600">
+              <span className="min-w-0 truncate">{file.name}</span>
 
               <button
                 type="button"
                 onClick={handleClearFile}
                 title="Remove selected file"
-                className="text-slate-400 hover:text-danger transition-colors"
+                className="shrink-0 text-slate-400 hover:text-danger transition-colors"
               >
                 <X size={13} />
               </button>
@@ -151,14 +151,14 @@ export default function DocumentsTab({ studentId, setToast }) {
           placeholder="Document type (e.g. Passport)"
           value={documentType}
           onChange={(e) => setDocumentType(e.target.value)}
-          className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm flex-1 min-w-[160px]"
+          className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm w-full min-w-0 sm:flex-1 sm:w-auto sm:min-w-[160px]"
         />
 
         {/* Upload Button */}
         <button
           type="submit"
           disabled={!file || uploading}
-          className="btn-primary flex items-center gap-2 disabled:opacity-50"
+          className="btn-primary flex w-full sm:w-auto items-center justify-center gap-2 disabled:opacity-50"
         >
           <Upload size={14} />
 
@@ -180,24 +180,24 @@ export default function DocumentsTab({ studentId, setToast }) {
           {documents.map((doc) => (
             <div
               key={doc.id}
-              className="flex items-center justify-between bg-slate-50 rounded-xl p-3"
+              className="flex items-center justify-between gap-2 bg-slate-50 rounded-xl p-3"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="w-9 h-9 shrink-0 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">
                   <FileText size={16} />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <a
                     href={doc.file}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-sm font-medium text-primary-600 hover:underline"
+                    className="block break-words text-sm font-medium text-primary-600 hover:underline"
                   >
                     {doc.document_type || "Document"}
                   </a>
 
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-400 break-words">
                     Uploaded by {doc.uploaded_by_name || "Unknown"} ·{" "}
                     {new Date(doc.uploaded_at).toLocaleString()}
                   </p>
@@ -210,7 +210,7 @@ export default function DocumentsTab({ studentId, setToast }) {
                   type="button"
                   onClick={() => handleDelete(doc.id)}
                   title="Delete"
-                  className="p-2 rounded-lg bg-red-50 text-danger hover:bg-red-100 transition-colors"
+                  className="shrink-0 p-2 rounded-lg bg-red-50 text-danger hover:bg-red-100 transition-colors"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -223,15 +223,15 @@ export default function DocumentsTab({ studentId, setToast }) {
       {/* Delete Confirmation Modal */}
       {deleteTarget !== null && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4"
           onClick={() => !deleting && setDeleteTarget(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 sm:px-6 py-4">
               <h3
                 className="text-base font-semibold text-slate-800"
                 style={{ fontFamily: "'Sora', sans-serif" }}
@@ -249,7 +249,7 @@ export default function DocumentsTab({ studentId, setToast }) {
             </div>
 
             {/* Modal Body */}
-            <div className="px-6 py-5">
+            <div className="px-4 sm:px-6 py-5">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
                   <Trash2 size={18} className="text-danger" />
@@ -262,11 +262,11 @@ export default function DocumentsTab({ studentId, setToast }) {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 border-t border-slate-100 px-4 sm:px-6 py-4">
               <button
                 onClick={() => setDeleteTarget(null)}
                 disabled={deleting}
-                className="btn-outline rounded-xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="btn-outline w-full sm:w-auto rounded-xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -274,7 +274,7 @@ export default function DocumentsTab({ studentId, setToast }) {
               <button
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full sm:w-auto rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting ? "Deleting..." : "Delete Document"}
               </button>

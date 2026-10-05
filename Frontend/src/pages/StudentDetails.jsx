@@ -18,7 +18,7 @@ export default function StudentDetails() {
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // The tab lives in the URL (?tab=Reminders) so the navbar bell can open the Reminders tab directly, and a refresh keeps the same tab.
+  
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = (searchParams.get("tab") || "").toLowerCase();
   const activeTab = TABS.find((t) => t.toLowerCase() === tabParam) || "Overview";
@@ -26,7 +26,6 @@ export default function StudentDetails() {
     setSearchParams(tab === "Overview" ? {} : { tab }, { replace: true });
   const [toast, setToast] = useState(null);
 
-  // Save a new status / stage. Updates the screen straight away, then rolls back if the server rejects it.
   const handleStatusChange = async (newStatus) => {
     const previous = student.status;
     setStudent((prev) => ({ ...prev, status: newStatus }));
@@ -83,7 +82,7 @@ export default function StudentDetails() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0">
       {toast && (
         <Toast
           message={toast.message}
@@ -100,11 +99,11 @@ export default function StudentDetails() {
         Back to Students
       </button>
 
-      <div className="pt-2 pb-1">
+      <div className="pt-2 pb-1 min-w-0">
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display font-bold text-3xl text-slate-800 tracking-tight">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-display font-bold text-xl sm:text-2xl lg:text-3xl text-slate-800 tracking-tight break-words">
               {student.full_name || "Unnamed Student"}
             </h1>
 
@@ -114,13 +113,13 @@ export default function StudentDetails() {
 
 
 
-      <div className="bg-white rounded-2xl shadow-card">
-        <div className="flex border-b border-slate-100 px-4">
+      <div className="bg-white rounded-2xl shadow-card min-w-0">
+        <div className="flex overflow-x-auto overscroll-x-contain border-b border-slate-100 px-2 sm:px-4">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab
+              className={`shrink-0 whitespace-nowrap px-3 sm:px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab
                 ? "border-primary-600 text-primary-600"
                 : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
@@ -130,7 +129,7 @@ export default function StudentDetails() {
           ))}
         </div>
 
-        <div className="p-5">
+        <div className="p-3 sm:p-5">
           {activeTab === "Overview" && <OverviewTab student={student} onStatusChange={handleStatusChange} />}
           {activeTab === "Documents" && (
             <DocumentsTab studentId={student.id} setToast={setToast} />

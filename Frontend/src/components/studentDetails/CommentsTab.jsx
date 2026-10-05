@@ -76,11 +76,11 @@ export default function CommentsTab({ studentId, setToast }) {
           rows={3}
           className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
         />
-        <div className="flex justify-end">
+        <div className="flex sm:justify-end">
           <button
             type="submit"
             disabled={!text.trim() || submitting}
-            className="btn-primary disabled:opacity-50"
+            className="btn-primary w-full sm:w-auto disabled:opacity-50"
           >
             {submitting ? "Posting..." : "Add Comment"}
           </button>
@@ -95,9 +95,9 @@ export default function CommentsTab({ studentId, setToast }) {
         <div className="space-y-3">
           {comments.map((c) => (
             <div key={c.id} className="bg-slate-50 rounded-xl p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-semibold text-slate-800">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="text-sm font-semibold text-slate-800 break-words">
                     {c.user_name || "Unknown"}
                   </span>
                   <span className="text-xs text-slate-400">
@@ -109,13 +109,13 @@ export default function CommentsTab({ studentId, setToast }) {
                   <button
                     onClick={() => handleDelete(c.id)}
                     title="Delete"
-                    className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-danger transition-colors"
+                    className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-danger transition-colors"
                   >
                     <Trash2 size={13} />
                   </button>
                 )}
               </div>
-              <p className="text-sm text-slate-600 mt-1.5 whitespace-pre-wrap">
+              <p className="text-sm text-slate-600 mt-1.5 whitespace-pre-wrap break-words">
                 {c.comment}
               </p>
             </div>
@@ -126,15 +126,15 @@ export default function CommentsTab({ studentId, setToast }) {
       {/* Delete Confirmation Modal */}
       {deleteTarget !== null && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4"
           onClick={() => !deleting && setDeleteTarget(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 sm:px-6 py-4">
               <h3
                 className="text-base font-semibold text-slate-800"
                 style={{ fontFamily: "'Sora', sans-serif" }}
@@ -152,7 +152,7 @@ export default function CommentsTab({ studentId, setToast }) {
             </div>
 
             {/* Modal Body */}
-            <div className="px-6 py-5">
+            <div className="px-4 sm:px-6 py-5">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
                   <Trash2 size={18} className="text-danger" />
@@ -165,11 +165,11 @@ export default function CommentsTab({ studentId, setToast }) {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 border-t border-slate-100 px-4 sm:px-6 py-4">
               <button
                 onClick={() => setDeleteTarget(null)}
                 disabled={deleting}
-                className="btn-outline rounded-xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="btn-outline w-full sm:w-auto rounded-xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -177,7 +177,7 @@ export default function CommentsTab({ studentId, setToast }) {
               <button
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full sm:w-auto rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting ? "Deleting..." : "Delete Comment"}
               </button>

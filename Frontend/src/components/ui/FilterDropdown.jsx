@@ -4,12 +4,12 @@ import { ChevronDown, Check } from "lucide-react";
 export default function FilterDropdown({
   value,
   onChange,
-  options, // [{ value, label }]
+  options,
   allLabel = "All",
   className = "",
   buttonClassName = "",
-  showAllOption = true, // false = no "All"/clear row (value can't be emptied)
-  fixedMenu = false, // true = menu isn't clipped by scrollable parents (tables)
+  showAllOption = true, 
+  fixedMenu = false,
 }) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState(null);
@@ -25,7 +25,6 @@ export default function FilterDropdown({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  // For fixedMenu: place the menu next to the button, flip up near screen bottom.
   useEffect(() => {
     if (!fixedMenu) return;
     if (!open || !wrapperRef.current) {
@@ -64,29 +63,29 @@ export default function FilterDropdown({
         onClick={() => setOpen((prev) => !prev)}
         className={`input-field w-full flex items-center justify-between gap-2 ${buttonClassName}`}
       >
-        <span className={value ? "text-slate-700" : "text-slate-400"}>
+        <span className={`min-w-0 truncate text-left ${value ? "text-slate-700" : "text-slate-400"}`}>
           {displayLabel}
         </span>
-        <ChevronDown size={14} className="text-slate-400" />
+        <ChevronDown size={14} className="text-slate-400 shrink-0" />
       </button>
 
       {open && (!fixedMenu || menuPos) && (
         <div
           style={fixedMenu && menuPos ? { position: "fixed", top: menuPos.top, left: menuPos.left, width: menuPos.width } : undefined}
-          className={`${fixedMenu ? "z-[200]" : "absolute z-50 mt-1 w-full min-w-[160px]"} max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-card-hover py-1`}
+          className={`${fixedMenu ? "z-[200]" : "absolute left-0 z-50 mt-1 w-full min-w-[160px] max-w-[calc(100vw-2rem)]"} max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-card-hover py-1`}
         >
           {showAllOption && (
           <button
             type="button"
             onClick={() => handleSelect("")}
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${
+            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left break-words transition-colors ${
               !value
                 ? "text-primary-700 font-semibold bg-primary-50"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
             {allLabel}
-            {!value && <Check size={14} />}
+            {!value && <Check size={14} className="shrink-0" />}
           </button>
           )}
 
@@ -95,14 +94,14 @@ export default function FilterDropdown({
               key={opt.value}
               type="button"
               onClick={() => handleSelect(opt.value)}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${
+              className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left break-words transition-colors ${
                 value === opt.value
                   ? "text-primary-700 font-semibold bg-primary-50"
                   : "text-slate-600 hover:bg-slate-50"
               }`}
             >
               {opt.label}
-              {value === opt.value && <Check size={14} />}
+              {value === opt.value && <Check size={14} className="shrink-0" />}
             </button>
           ))}
         </div>

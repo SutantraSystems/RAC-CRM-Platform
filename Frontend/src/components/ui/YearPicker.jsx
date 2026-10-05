@@ -41,16 +41,16 @@ export default function YearFilterCalendar({ value, onChange, className = "" }) 
                 onClick={() => setOpen((prev) => !prev)}
                 className="input-field w-full flex items-center justify-between gap-2"
             >
-                <span className="flex items-center gap-2">
-                    <Calendar size={14} className="text-slate-400" />
-                    <span className={value ? "text-slate-700" : "text-slate-400"}>
+                <span className="flex items-center gap-2 min-w-0">
+                    <Calendar size={14} className="text-slate-400 shrink-0" />
+                    <span className={`truncate ${value ? "text-slate-700" : "text-slate-400"}`}>
                         {displayLabel()}
                     </span>
                 </span>
             </button>
 
             {open && (
-                <div className="absolute z-50 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-card-hover p-3">
+                <div className="absolute left-0 z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-card-hover p-3">
                     {/* All Years */}
                     <button
                         type="button"

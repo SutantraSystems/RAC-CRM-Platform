@@ -17,13 +17,14 @@ export default function KpiCard({
         rounded-lg
         p-3
         min-h-[85px]
+        min-w-0
         transition-all
         duration-200
         hover:shadow-card
       "
     >
       {/* Title */}
-      <h4 className="text-sm font-medium text-slate-700 mb-2">
+      <h4 className="text-sm font-medium text-slate-700 mb-2 break-words">
         {title}
       </h4>
 

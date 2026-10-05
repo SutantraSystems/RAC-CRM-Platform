@@ -54,8 +54,6 @@ export default function Dashboard() {
   const [statusSummary, setStatusSummary] = useState({});
   // Status the cards are currently filtered by (set when Apply Filter runs).
   const [appliedStatus, setAppliedStatus] = useState("");
-  // true once Apply Filter has been clicked; false on load and after Clear Filters.
-  const [filtersApplied, setFiltersApplied] = useState(false);
 
   const fetchDashboardData = async (filtersOverride) => {
     const activeFilters = filtersOverride || dateFilters;
@@ -71,9 +69,6 @@ export default function Dashboard() {
         params.year = activeFilters.year;
       }
 
-      // Total Leads and the status summary both use country + year.
-      // Total Leads additionally applies the Status filter (if any), so that
-      // when one status is selected, Total Leads == that status's own count.
       const countParams = { ...params };
       if (activeFilters.status) {
         countParams.status = activeFilters.status;
@@ -87,7 +82,6 @@ export default function Dashboard() {
       setStudentCount(countRes.data.total_students);
       setStatusSummary(summaryRes.data);
       setAppliedStatus(activeFilters.status || "");
-      setFiltersApplied(!!filtersOverride ? false : true);
     } catch (err) {
       console.error("Error fetching dashboard data", err);
     }
@@ -109,27 +103,23 @@ export default function Dashboard() {
     fetchDashboardData(DEFAULT_DATE_FILTERS);
   };
 
-  // Default (no filter applied yet, or Clear Filters was just clicked):
-  // Total Leads + all 8 status cards.
-  // After Apply Filter (any combination of country/year/status): just Total
-  // Leads, whichever filters were used to compute it.
-  const kpiCards = filtersApplied
+  const kpiCards = appliedStatus
     ? [{ key: "total", title: "Total Leads", value: studentCount }]
     : [
-        { key: "total", title: "Total Leads", value: studentCount },
-        ...STATUS_OPTIONS.map((o) => ({
-          key: o.value,
-          title: o.label,
-          value: statusSummary[o.value] ?? 0,
-        })),
-      ];
+      { key: "total", title: "Total Leads", value: studentCount },
+      ...STATUS_OPTIONS.map((o) => ({
+        key: o.value,
+        title: o.label,
+        value: statusSummary[o.value] ?? 0,
+      })),
+    ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Date filter bar */}
-      <div className="bg-white rounded-2xl shadow-card p-5 border border-slate-100">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1 w-[160px]">
+      <div className="bg-white rounded-2xl shadow-card p-4 sm:p-5 border border-slate-100 overflow-visible">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:flex lg:flex-wrap lg:items-end">
+          <div className="flex flex-col gap-1 w-full lg:w-[160px] lg:shrink-0 min-w-0">
             <label className="text-xs font-medium text-slate-500">Country</label>
             <FilterDropdown
               value={dateFilters.country}
@@ -139,7 +129,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="flex flex-col gap-1 w-[150px]">
+          <div className="flex flex-col gap-1 w-full lg:w-[150px] lg:shrink-0 min-w-0">
             <label className="text-xs font-medium text-slate-500">Year</label>
             <YearFilterCalendar
               value={dateFilters.year}
@@ -147,7 +137,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="flex flex-col gap-1 w-[150px]">
+          <div className="flex flex-col gap-1 w-full lg:w-[150px] lg:shrink-0 min-w-0">
             <label className="text-xs font-medium text-slate-500">Status</label>
             <FilterDropdown
               value={dateFilters.status}
@@ -157,9 +147,9 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="flex items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2 sm:items-end lg:shrink-0">
             <button
-              className="btn-primary h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
+              className="btn-primary h-[42px] flex-1 lg:flex-none flex items-center justify-center gap-2 whitespace-nowrap"
               onClick={() => fetchDashboardData()}
             >
               <Filter size={14} />
@@ -167,7 +157,7 @@ export default function Dashboard() {
             </button>
 
             <button
-              className="btn-outline h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
+              className="btn-outline h-[42px] flex-1 lg:flex-none flex items-center justify-center gap-2 whitespace-nowrap"
               onClick={handleClearFilters}
             >
               <X size={14} />
@@ -178,7 +168,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
         {kpiCards.map((kpi, i) => (
           <KpiCard
             key={kpi.key}

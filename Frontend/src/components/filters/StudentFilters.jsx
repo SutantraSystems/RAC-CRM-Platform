@@ -57,7 +57,7 @@ export default function StudentFilters({ onFilter, onClear }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-card pt-2 px-3 pb-2 mb-2 border border-slate-100">
+    <div className="bg-white rounded-xl shadow-card pt-2 px-3 pb-3 sm:pb-2 mb-2 border border-slate-100">
       {/* Heading */}
       <div className="flex items-center gap-1 mb-1">
         <Filter size={16} className="text-primary-600" />
@@ -66,10 +66,10 @@ export default function StudentFilters({ onFilter, onClear }) {
 
 
       {/* Filter Row - Single Line */}
-      <div className="flex items-end gap-3 whitespace-nowrap">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:flex lg:flex-wrap lg:items-end">
 
         {/* Global Search */}
-        <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex flex-col min-w-0 sm:col-span-2 lg:col-span-1 lg:flex-1 lg:min-w-[220px]">
           <div className="relative">
             <Search
               size={14}
@@ -87,7 +87,7 @@ export default function StudentFilters({ onFilter, onClear }) {
         </div>
 
         {/* Country */}
-        <div className="w-[145px] shrink-0">
+        <div className="w-full min-w-0 lg:w-[145px] lg:shrink-0">
           <FilterDropdown
             value={filters.country}
             onChange={(val) => handleChange("country", val)}
@@ -97,7 +97,7 @@ export default function StudentFilters({ onFilter, onClear }) {
         </div>
 
         {/* Intake */}
-        <div className="w-[135px] shrink-0">
+        <div className="w-full min-w-0 lg:w-[135px] lg:shrink-0">
           <FilterDropdown
             value={filters.intake}
             onChange={(val) => handleChange("intake", val)}
@@ -107,7 +107,7 @@ export default function StudentFilters({ onFilter, onClear }) {
         </div>
 
         {/* Year */}
-        <div className="w-[135px] shrink-0">
+        <div className="w-full min-w-0 lg:w-[135px] lg:shrink-0">
           <YearFilterCalendar
             value={filters.year}
             onChange={(year) => handleChange("year", year)}
@@ -115,7 +115,7 @@ export default function StudentFilters({ onFilter, onClear }) {
         </div>
 
         {/* Status */}
-        <div className="w-[135px] shrink-0">
+        <div className="w-full min-w-0 lg:w-[135px] lg:shrink-0">
           <FilterDropdown
             value={filters.status}
             onChange={(val) => handleChange("status", val)}
@@ -125,7 +125,7 @@ export default function StudentFilters({ onFilter, onClear }) {
         </div>
 
         {/* Source File */}
-        <div className="w-[160px] shrink-0">
+        <div className="w-full min-w-0 lg:w-[160px] lg:shrink-0">
           <FilterDropdown
             value={filters.source_file}
             onChange={(val) => handleChange("source_file", val)}
@@ -135,10 +135,10 @@ export default function StudentFilters({ onFilter, onClear }) {
         </div>
         
         {/* Apply + Clear */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-1 lg:flex-nowrap lg:shrink-0">
           <button
             onClick={handleApply}
-            className="btn-primary h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
+            className="btn-primary h-[42px] flex-1 lg:flex-none flex items-center justify-center gap-2 whitespace-nowrap"
           >
             <Filter size={14} />
             Apply Filter
@@ -146,7 +146,7 @@ export default function StudentFilters({ onFilter, onClear }) {
 
           <button
             onClick={handleClear}
-            className="btn-outline h-[42px] flex items-center justify-center gap-2 whitespace-nowrap"
+            className="btn-outline h-[42px] flex-1 lg:flex-none flex items-center justify-center gap-2 whitespace-nowrap"
           >
             <X size={14} />
             Clear

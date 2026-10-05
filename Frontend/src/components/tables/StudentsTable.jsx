@@ -41,8 +41,8 @@ export default function StudentsTable({
   return (
     <div className="bg-white rounded-2xl shadow-card border border-slate-400 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-1.5 border-b border-slate-400 bg-slate-50/50">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 sm:py-1.5 border-b border-slate-400 bg-slate-50/50">
+        <div className="min-w-0">
           <h2 className="font-semibold text-slate-800 text-base">
             Students
           </h2>
@@ -54,7 +54,7 @@ export default function StudentsTable({
 
         <button
           onClick={onAdd}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex shrink-0 items-center gap-2 px-4 sm:px-5"
         >
           <Plus size={15} />
           Add Student
@@ -62,7 +62,7 @@ export default function StudentsTable({
       </div>
 
       {/* Table */}
-      <div className="max-h-[400px] overflow-auto bg-slate-50 p-1">
+      <div className="max-h-[60vh] sm:max-h-[400px] overflow-auto overscroll-x-contain bg-slate-50 p-1">
         <table
           className="w-full text-sm"
           style={{
@@ -310,9 +310,9 @@ export default function StudentsTable({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="px-4 py-2 border-t border-slate-400 bg-slate-50/50">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-slate-500">
+        <div className="px-3 sm:px-4 py-2 border-t border-slate-400 bg-slate-50/50">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-2 md:gap-4">
+            <p className="text-sm text-slate-500 text-center md:text-left">
               Showing{" "}
               <span className="font-semibold text-slate-700">
                 {(page - 1) * 10 + 1}
@@ -328,7 +328,7 @@ export default function StudentsTable({
               students
             </p>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <button
                 onClick={() =>
                   setPage((prev) =>

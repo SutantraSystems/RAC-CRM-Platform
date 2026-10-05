@@ -150,17 +150,17 @@ function ReminderItem({
 
   return (
     <div
-      className={`group relative border-b border-slate-200 px-5 py-4 transition-colors last:border-b-0 ${
+      className={`group relative border-b border-slate-200 px-3 py-3 sm:px-5 sm:py-4 transition-colors last:border-b-0 ${
         completed
           ? "bg-slate-50/60"
           : "bg-white hover:bg-slate-50/70"
       }`}
     >
-      <div className="flex gap-4">
+      <div className="flex gap-3 sm:gap-4">
 
         {/* Icon */}
         <div
-          className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.iconBg}`}
+          className={`mt-0.5 flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl ${style.iconBg}`}
         >
           <Icon size={18} />
         </div>
@@ -169,13 +169,13 @@ function ReminderItem({
         <div className="min-w-0 flex-1">
 
           {/* Title + Status */}
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
 
-            <div className="min-w-0">
+            <div className="min-w-0 max-w-full">
               <div className="flex flex-wrap items-center gap-2">
 
                 <h4
-                  className={`text-[15px] font-semibold ${
+                  className={`min-w-0 break-words text-[15px] font-semibold ${
                     completed
                       ? "text-slate-500 line-through"
                       : "text-slate-900"
@@ -217,7 +217,7 @@ function ReminderItem({
             </div>
 
             {/* Date/time */}
-            <div className="flex shrink-0 items-center gap-3 text-xs font-medium text-slate-600">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:shrink-0 text-xs font-medium text-slate-600">
 
               <span className="flex items-center gap-1.5">
                 <Calendar size={13} />
@@ -235,7 +235,7 @@ function ReminderItem({
           {/* Notes */}
           {reminder.notes && (
             <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
-              <p className="text-sm leading-5 text-slate-600">
+              <p className="text-sm leading-5 text-slate-600 break-words">
                 {reminder.notes}
               </p>
             </div>
@@ -331,7 +331,7 @@ function ReminderSection({
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
-      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 px-5 py-3">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 px-3 sm:px-5 py-3">
 
         <div className="flex items-center gap-2">
 
@@ -434,9 +434,6 @@ export default function RemindersTab({
     notifyRemindersChanged();
   };
 
-  /* -------------------------------------------------------
-     CREATE / EDIT / RESCHEDULE
-  ------------------------------------------------------- */
 
   const handleModalSubmit = async (
     payload
@@ -639,7 +636,7 @@ export default function RemindersTab({
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
 
       {/* HEADER */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -661,7 +658,7 @@ export default function RemindersTab({
               reminder: null,
             })
           }
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
         >
           <Plus size={17} />
           Set Reminder
@@ -685,7 +682,7 @@ export default function RemindersTab({
       ) : reminders.length === 0 ? (
 
         /* EMPTY STATE */
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center">
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 sm:px-6 py-10 sm:py-14 text-center">
 
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
             <Bell
@@ -881,19 +878,19 @@ export default function RemindersTab({
       {/* DELETE CONFIRMATION */}
       {deleteTarget && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4"
           onClick={() =>
             !deleting &&
             setDeleteTarget(null)
           }
         >
           <div
-            className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl"
             onClick={(event) =>
               event.stopPropagation()
             }
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 sm:px-6 py-4">
 
               <h3 className="text-base font-semibold text-slate-900">
                 Delete Reminder?
@@ -911,7 +908,7 @@ export default function RemindersTab({
 
             </div>
 
-            <div className="px-6 py-5">
+            <div className="px-4 sm:px-6 py-5">
 
               <div className="flex items-start gap-3">
 
@@ -922,12 +919,12 @@ export default function RemindersTab({
                   />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-800">
                     Delete this reminder?
                   </p>
 
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-slate-500 break-words">
                     "{deleteTarget.title}"
                     <br />
                   </p>
@@ -937,14 +934,14 @@ export default function RemindersTab({
 
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 border-t border-slate-200 px-4 sm:px-6 py-4">
 
               <button
                 onClick={() =>
                   setDeleteTarget(null)
                 }
                 disabled={deleting}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="w-full sm:w-auto rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Cancel
               </button>
@@ -954,7 +951,7 @@ export default function RemindersTab({
                   handleConfirmDelete
                 }
                 disabled={deleting}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                className="w-full sm:w-auto rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {deleting
                   ? "Deleting..."

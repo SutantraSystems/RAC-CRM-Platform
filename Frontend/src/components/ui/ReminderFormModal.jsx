@@ -21,7 +21,6 @@ const SUBMIT_LABELS = {
   reschedule: "Reschedule",
 };
 
-// Next full hour from now, as the default time for a new reminder.
 const defaultStart = () => {
   const d = new Date();
   d.setHours(d.getHours() + 1, 0, 0, 0);
@@ -54,15 +53,11 @@ export default function ReminderFormModal({ mode, reminder, onClose, onSubmit })
       return;
     }
 
-    // Date/time changed? (Always true for a new reminder or a reschedule.)
     const timeChanged =
       !reminder ||
       date !== toDateInput(reminder.remind_at) ||
       time !== toTimeInput(reminder.remind_at);
 
-    // New and rescheduled reminders, and any changed time, must be in the
-    // future. When editing an overdue reminder and the date/time is left
-    // alone, the existing date/time is kept.
     if (timeChanged && new Date(remindAt) <= new Date()) {
       setError(FUTURE_MESSAGE);
       return;
@@ -89,15 +84,15 @@ export default function ReminderFormModal({ mode, reminder, onClose, onSubmit })
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4"
       onClick={() => !saving && onClose()}
     >
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-2xl bg-white shadow-2xl"
+        className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 sm:px-6 py-4">
           <h3
             className="text-base font-semibold text-slate-800"
             style={{ fontFamily: "'Sora', sans-serif" }}
@@ -114,7 +109,7 @@ export default function ReminderFormModal({ mode, reminder, onClose, onSubmit })
           </button>
         </div>
 
-        <div className="space-y-4 px-6 py-5">
+        <div className="space-y-4 px-4 sm:px-6 py-5">
           {isReschedule && (
             <p className="text-sm text-slate-500">
               Pick a new date and time for{" "}
@@ -142,8 +137,8 @@ export default function ReminderFormModal({ mode, reminder, onClose, onSubmit })
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
+            <div className="min-w-0">
               <label className="mb-1 block text-xs font-semibold text-slate-600">
                 Date (IST) <span className="text-danger">*</span>
               </label>
@@ -155,7 +150,7 @@ export default function ReminderFormModal({ mode, reminder, onClose, onSubmit })
                 className="input-field w-full"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-1 block text-xs font-semibold text-slate-600">
                 Time (IST) <span className="text-danger">*</span>
               </label>
@@ -185,10 +180,10 @@ export default function ReminderFormModal({ mode, reminder, onClose, onSubmit })
             </div>
           )}
 
-          {error && <p className="text-sm text-danger">{error}</p>}
+          {error && <p className="text-sm text-danger break-words">{error}</p>}
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3 border-t border-slate-100 px-4 sm:px-6 py-4">
           <button
             type="button"
             onClick={onClose}

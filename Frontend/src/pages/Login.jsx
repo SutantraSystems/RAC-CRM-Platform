@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import racLogo from "../assets/RAC.png";
 import { useAuth } from "../context/AuthContext";
@@ -6,7 +6,15 @@ import Toast from "../components/ui/Toast";
 
 const Login = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, sessionExpired, clearSessionExpired } = useAuth();
+
+    const [showExpiredNotice, setShowExpiredNotice] = useState(sessionExpired);
+
+    useEffect(() => {
+        if (sessionExpired) {
+            clearSessionExpired();
+        }
+    }, []);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -42,31 +50,41 @@ const Login = () => {
         }
         try {
             setIsLoading(true);
+            setShowExpiredNotice(false);
             await login(email, password);
             setToast({
                 type: "success",
                 message: "Logged in successfully! Redirecting to dashboard...",
             });
 
+            // `replace` so the back button doesn't return to the login form.
             setTimeout(() => {
-                navigate("/dashboard");
+                navigate("/dashboard", { replace: true });
             }, 1200);
             return;
 
         } catch (error) {
             console.error("Login failed:", error);
 
-            setErrors({
-                general:
-                    error.response?.data?.detail ||
-                    "Invalid email or password.",
-            });
+            let message;
+
+            if (!error.response) {
+                message = "Unable to connect to the server. Please try again.";
+            } else if (error.response.status === 403) {
+                message = "Your session could not be verified. Please refresh the page and try again.";
+            } else {
+                message =
+                    error.response.data?.detail ||
+                    "Invalid email or password.";
+            }
+
+            setErrors({ general: message });
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-3 py-6 sm:px-4">
             {toast && (
                 <Toast
                     message={toast.message}
@@ -75,27 +93,37 @@ const Login = () => {
                 />
             )}
 
-            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
+            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-5 sm:p-8">
 
                 {/* RAC Logo */}
                 <div className="flex justify-center mb-6">
                     <img
                         src={racLogo}
                         alt="RAC Logo"
-                        className="h-20 w-auto object-contain"
+                        className="h-16 sm:h-20 w-auto max-w-full object-contain"
                     />
                 </div>
 
                 {/* Heading */}
                 <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold text-gray-800">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
                         Welcome Back
                     </h1>
 
-                    <p className="text-gray-500 mt-2">
+                    <p className="text-sm sm:text-base text-gray-500 mt-2">
                         Login to your RAC CRM account
                     </p>
                 </div>
+
+                {/* Session expired notice */}
+                {showExpiredNotice && (
+                    <div
+                        role="alert"
+                        className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-md text-sm"
+                    >
+                        Your session has expired. Please log in again.
+                    </div>
+                )}
 
                 {/* General Error */}
                 {errors.general && (
