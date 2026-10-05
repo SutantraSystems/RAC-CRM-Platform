@@ -474,14 +474,16 @@ class UploadStudentsAPIView(APIView):
 
                 rows_seen = set()
                 to_insert = []
-
                 for index, data in parsed_rows:
 
-                    # Create duplicate hash
                     dedup_hash = build_dedup_hash(data)
 
                     if dedup_hash in rows_seen:
                         total_skipped += 1
+                        duplicate_rows.append(
+                            f"{file.name} - Row {index + 2}: "
+                            "duplicate of another row in this same file."
+                        )
                         continue
 
                     rows_seen.add(dedup_hash)
@@ -489,46 +491,35 @@ class UploadStudentsAPIView(APIView):
                     if RACStudent.objects.filter(
                         dedup_hash=dedup_hash
                     ).exists():
-
                         total_skipped += 1
+                        duplicate_rows.append(
+                            f"{file.name} - Row {index + 2}: "
+                            "a student with identical details already exists."
+                        )
                         continue
 
+                    # Email and mobile must be unique (DB + earlier rows).
                     reasons = []
-
-                    if contact_index.email_exists(
-                        data["email"]
-                    ):
+                    if contact_index.email_exists(data["email"]):
                         reasons.append("email")
-
-                    if contact_index.mobile_exists(
-                        data["mobile_number"]
-                    ):
+                    if contact_index.mobile_exists(data["mobile_number"]):
                         reasons.append("mobile number")
-
                     if reasons:
-
                         total_skipped += 1
-
                         duplicate_rows.append(
                             f"{file.name} - Row {index + 2}: "
                             f"{' and '.join(reasons)} already exists."
                         )
-
                         continue
 
-                    # Add contact to index
-                    contact_index.add(
-                        data["email"],
-                        data["mobile_number"]
-                    )
+                    contact_index.add(data["email"], data["mobile_number"])
 
-                    # Prepare database object
                     to_insert.append(
                         RACStudent(
                             **data,
                             dedup_hash=dedup_hash
                         )
-                    )
+                    )               
 
                 if to_insert:
 

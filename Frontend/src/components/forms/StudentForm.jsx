@@ -14,7 +14,7 @@ const intakeOptions = [
 ];
 
 const Field = ({ label, children }) => (
-  <div className="flex flex-col gap-1">
+  <div className="flex flex-col gap-1 min-w-0">
     <label className="text-xs font-medium text-slate-500">{label}</label>
     {children}
   </div>
@@ -108,7 +108,7 @@ export default function StudentForm({
     <form onSubmit={handleSubmit} className="space-y-3">
 
           {/* ROW 1 */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2">
             <Field label="Full Name">
               <input
                 name="full_name"
@@ -144,7 +144,7 @@ export default function StudentForm({
           </div>
 
           {/* ROW 2 */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2">
             <Field label="Email">
               <input
                 type="email"
@@ -180,7 +180,7 @@ export default function StudentForm({
           </div>
 
           {/* ROW 3 */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
             <Field label="Test Score">
               <input
                 type="number"
@@ -205,7 +205,7 @@ export default function StudentForm({
           </div>
 
           {/* ROW 3b — Intake & Year */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
             <Field label="Intake">
               <FilterDropdown
                 value={formData.intake}
@@ -224,7 +224,7 @@ export default function StudentForm({
           </div>
 
           {/* ROW 3c — Location */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
             <Field label="Location">
               <FilterDropdown
                 value={formData.location}
@@ -236,7 +236,7 @@ export default function StudentForm({
           </div>
 
           {/* ROW 4 */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2">
             <Field label="Parent Name">
               <input
                 name="parent_name"
@@ -281,12 +281,12 @@ export default function StudentForm({
           </Field>
 
           {/* BUTTONS */}
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-3 border-t border-slate-200">
 
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50"
+              className="w-full sm:w-auto px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50"
             >
               Cancel
             </button>
@@ -294,7 +294,7 @@ export default function StudentForm({
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 text-sm btn-primary text-white rounded-lg hover:btn-primary-hover disabled:opacity-60"
+              className="w-full sm:w-auto px-4 py-2 text-sm btn-primary text-white rounded-lg hover:btn-primary-hover disabled:opacity-60"
             >
               {saving ? "Saving..." : "Save Student"}
             </button>

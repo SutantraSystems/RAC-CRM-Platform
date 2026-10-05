@@ -10,16 +10,24 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  const [loggingOut, setLoggingOut] = useState(false);
+
   const email = user?.email || '';
   const displayName = user?.short_name || 'User';
+  const fullName = user?.full_name?.trim() || displayName;
   const initials = user?.full_name
     ? user.full_name.trim().split(/\s+/).map((n) => n[0]).slice(0, 2).join('').toUpperCase()
     : (email ? email.slice(0, 2).toUpperCase() : '??');
 
   const handleLogout = async () => {
+    if (loggingOut) return; // ignore double taps while the request is in flight
+    setLoggingOut(true);
     try {
+      // Never throws: even if the request fails, the user is signed out locally.
       await logout();
     } finally {
+      setProfileOpen(false);
+      // `replace` keeps the CRM page out of history, so Back can't return to it.
       navigate('/login', { replace: true });
     }
   };
@@ -30,21 +38,32 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
         setProfileOpen(false);
       }
     }
+    function handleEscape(e) {
+      if (e.key === 'Escape') setProfileOpen(false);
+    }
+    // touchstart: iOS Safari doesn't emit mouse events when tapping non-interactive areas, so mousedown alone wouldn't close the menu there.
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
 
   return (
-    <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-50 shadow-sm">
-      <div className="flex items-center gap-4">
+    <header className="h-16 sm:h-20 bg-white border-b border-slate-100 flex items-center justify-between gap-2 px-3 sm:px-6 sticky top-0 z-50 shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="p-2 rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-colors"
+          aria-label="Toggle navigation"
+          className="p-2 rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-colors shrink-0"
         >
           <Menu size={20} />
         </button>
-        <div>
-          <h1 className="font-display font-semibold text-slate-800 text-base leading-tight">{pageTitle}</h1>
+        <div className="min-w-0">
+          <h1 className="font-display font-semibold text-slate-800 text-sm sm:text-base leading-tight truncate">{pageTitle}</h1>
           {/* <p className="text-xs text-slate-400">
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p> */}
@@ -62,7 +81,7 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
         />
       </div> */}
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Reminder notifications (Due + Overdue) */}
         <NotificationBell />
 
@@ -77,22 +96,25 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setProfileOpen(!profileOpen)}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-primary-50 transition-colors"
+            aria-haspopup="menu"
+            aria-expanded={profileOpen}
+            className="flex items-center gap-1.5 sm:gap-2 pl-1.5 pr-2 sm:pl-2 sm:pr-3 py-1.5 rounded-xl hover:bg-primary-50 transition-colors"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+            <div className="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold shadow-sm">
               {initials}
             </div>
             <div className="hidden md:block text-left">
               <p className="text-xs font-semibold text-slate-800 leading-tight">{displayName}</p>
-              <p className="text-[10px] text-slate-400 leading-tight">{email}</p>
             </div>
-            <ChevronDown size={14} className="text-slate-400" />
+            <ChevronDown size={14} className="text-slate-400 shrink-0" />
           </button>
           {profileOpen && (
-            <div className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-card-hover border border-slate-100 z-50 overflow-hidden">
+            <div
+              role="menu"
+              className="absolute right-0 top-12 w-52 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-card-hover border border-slate-100 z-50 overflow-hidden"
+            >
               <div className="px-4 py-3 border-b border-slate-100">
-                <p className="font-semibold text-sm text-slate-800">{displayName}</p>
-                <p className="text-xs text-slate-400">{email}</p>
+                <p className="font-semibold text-sm text-slate-800 truncate">{fullName}</p>
               </div>
               {[
                 { icon: User, label: 'Profile', onClick: () => navigate('/profile') },
@@ -113,10 +135,11 @@ export default function Navbar({ onToggleSidebar, pageTitle }) {
               <div className="border-t border-slate-100">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-sm text-danger transition-colors"
+                  disabled={loggingOut}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-sm text-danger transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <LogOut size={15} />
-                  Logout
+                  {loggingOut ? 'Logging out...' : 'Logout'}
                 </button>
               </div>
             </div>

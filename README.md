@@ -30,7 +30,7 @@ A full-stack CRM dashboard application for managing students and CRM data.
 ```text
 RAC-CRM-Platform/
 │
-├── backend/
+├── Backend/
 │   ├── Backend/              # Django project configuration (settings, urls)
 │   ├── CRM/                  # CRM app: students, documents, comments, reminders
 │   ├── accounts/             # Authentication
@@ -39,7 +39,7 @@ RAC-CRM-Platform/
 │   ├── manage.py
 │   └── requirements.txt
 │
-├── frontend/
+├── Frontend/
 │   ├── src/
 │   │   ├── api/              # Axios instance
 │   │   ├── components/
@@ -77,7 +77,7 @@ Make sure the following are installed:
 Navigate to the backend directory:
 
 ```bash
-cd backend
+cd Backend
 ```
 
 Create a virtual environment:
@@ -116,12 +116,17 @@ pip install -r requirements.txt
 
 ## Environment Variables
 
-Create a `.env` file inside the `backend` directory. You can start from the
+Create a `.env` file inside the `Backend` directory. You can start from the
 example file:
 
 ```bash
-cp .env.example .env        # Windows (cmd): copy .env.example .env
+cp .env.example .env        # Linux / macOS (cmd): copy .env.example .env
 ```
+
+```bash
+copy .env.example .env        # Windows (cmd): copy .env.example .env
+```
+
 
 Then fill in your values:
 
@@ -134,6 +139,32 @@ DB_PORT=5432
 DEBUG=True
 SECRET_KEY=your-secret-key
 REMINDER_DUE_WINDOW_MINUTES=1440
+
+SESSION_COOKIE_AGE=86400
+SESSION_COOKIE_SECURE=false
+CSRF_COOKIE_SECURE=false
+SESSION_EXPIRE_AT_BROWSER_CLOSE=true
+```
+
+### Session Configuration
+
+The application uses Django session-based authentication.
+
+For local development over HTTP:
+
+```env
+SESSION_COOKIE_AGE=86400
+SESSION_COOKIE_SECURE=false
+CSRF_COOKIE_SECURE=false
+SESSION_EXPIRE_AT_BROWSER_CLOSE=true
+```
+
+For production over HTTPS:
+```env
+SESSION_COOKIE_AGE=86400
+SESSION_COOKIE_SECURE=true
+CSRF_COOKIE_SECURE=true
+SESSION_EXPIRE_AT_BROWSER_CLOSE=true
 ```
 
 To generate a secret key:
@@ -205,7 +236,7 @@ http://localhost:8000
 Open a new terminal and navigate to the frontend directory:
 
 ```bash
-cd frontend
+cd Frontend
 ```
 
 Install dependencies:
@@ -214,7 +245,7 @@ Install dependencies:
 npm install
 ```
 
-Create a `.env` file inside the `frontend` directory (or copy `.env.example`):
+Create a `.env` file inside the `Frontend` directory (or copy `.env.example`):
 
 ```env
 VITE_API_URL=http://localhost:8000/api

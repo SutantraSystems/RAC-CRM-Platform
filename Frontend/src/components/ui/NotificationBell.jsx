@@ -18,7 +18,6 @@ import {
 
 const POLL_MS = 60 * 1000;
 
-// Navbar bell: lists every Due and Overdue reminder shared across RAC.
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
@@ -125,11 +124,11 @@ export default function NotificationBell() {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-14 z-50 w-[420px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="fixed left-3 right-3 top-[4.25rem] z-50 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-14 sm:w-[420px] sm:max-w-[calc(100vw-24px)]">
           {/* Header */}
-          <div className="border-b border-slate-100 bg-white px-5 py-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+          <div className="border-b border-slate-100 bg-white px-4 py-3 sm:px-5 sm:py-4">
+            <div className="flex items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
                   <Bell size={19} strokeWidth={2} />
                 </div>
@@ -154,7 +153,7 @@ export default function NotificationBell() {
           </div>
 
           {/* Reminder List */}
-          <div className="max-h-[480px] overflow-y-auto">
+          <div className="max-h-[60vh] sm:max-h-[480px] overflow-y-auto">
             {/* Loading */}
             {!loaded ? (
               <div className="px-5 py-14 text-center">
@@ -190,7 +189,7 @@ export default function NotificationBell() {
                 return (
                   <div
                     key={item.id}
-                    className="border-b border-slate-100 px-5 py-4 transition-colors duration-150 last:border-0 hover:bg-slate-50"
+                    className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4 transition-colors duration-150 last:border-0 hover:bg-slate-50"
                   >
                     <div className="flex items-start gap-3.5">
                       {/* Reminder Icon */}
@@ -227,7 +226,7 @@ export default function NotificationBell() {
                         </div>
 
                         {/* Reminder title */}
-                        <p className="mt-2 text-sm font-medium leading-5 text-slate-700">
+                        <p className="mt-2 text-sm font-medium leading-5 text-slate-700 break-words">
                           {item.title}
                         </p>
 
@@ -246,7 +245,7 @@ export default function NotificationBell() {
 
                         {/* Notes */}
                         {item.notes && (
-                          <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
+                          <p className="mt-2 line-clamp-2 break-words text-xs leading-5 text-slate-500">
                             {item.notes}
                           </p>
                         )}
@@ -269,7 +268,7 @@ export default function NotificationBell() {
 
           {/* Footer */}
           {count > 0 && (
-            <div className="border-t border-slate-100 bg-slate-50 px-5 py-3">
+            <div className="border-t border-slate-100 bg-slate-50 px-4 sm:px-5 py-3">
               <p className="text-center text-xs text-slate-400">
                 Reminders refresh automatically every minute
               </p>
@@ -280,4 +279,3 @@ export default function NotificationBell() {
     </div>
   );
 }
-

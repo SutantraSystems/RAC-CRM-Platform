@@ -19,8 +19,11 @@ export const loginUser = async (data) => {
 };
 
 export const logoutUser = async () => {
+
     const response = await axiosInstance.post(
-        "/auth/logout/"
+        "/auth/logout/",
+        undefined,
+        { timeout: 8000 }
     );
 
     return response.data;
@@ -50,12 +53,6 @@ export const resetPassword = async (data) => {
     );
 
     return response.data;
-};
-
-export const deleteStudents = (ids) => {
-  return axiosInstance.delete(`${STUDENTS_URL}/bulk-delete/`, {
-    data: { ids },
-  });
 };
 
 export const updateProfile = async (data) => {

@@ -99,23 +99,23 @@ export default function Profile() {
             )}
 
             {/* Header card */}
-            <div className="bg-primary-600 rounded-2xl p-6 relative overflow-hidden shadow-card">
-                <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center text-white text-xl font-bold border border-white/20">
+            <div className="bg-primary-600 rounded-2xl p-4 sm:p-6 relative overflow-hidden shadow-card">
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center text-white text-xl font-bold border border-white/20">
                         {initials}
                     </div>
-                    <div>
-                        <h2 className="font-display font-bold text-xl text-white leading-tight">
+                    <div className="min-w-0">
+                        <h2 className="font-display font-bold text-lg sm:text-xl text-white leading-tight break-words">
                             {fullName || 'User'}
                         </h2>
-                        <p className="text-primary-100 text-sm mt-0.5">{email}</p>
+                        <p className="text-primary-100 text-sm mt-0.5 break-all">{email}</p>
                     </div>
                 </div>
             </div>
 
             {/* Account details */}
-            <div className="bg-white rounded-2xl shadow-card p-5">
-                <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-2xl shadow-card p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-2 mb-4">
                     <h3 className="font-display font-semibold text-slate-800 text-sm">
                         Account Details
                     </h3>
@@ -123,7 +123,7 @@ export default function Profile() {
                     {!isEditing && (
                         <button
                             onClick={startEditing}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 transition-colors"
+                            className="flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 transition-colors"
                         >
                             <Pencil size={13} />
                             Edit Profile
@@ -183,7 +183,7 @@ export default function Profile() {
                                     </div>
                                 </form>
                             ) : (
-                                <p className="text-sm font-medium text-slate-700">
+                                <p className="text-sm font-medium text-slate-700 break-words">
                                     {fullName || '—'}
                                 </p>
                             )}
@@ -196,9 +196,9 @@ export default function Profile() {
                             <Mail size={16} />
                         </div>
 
-                        <div>
+                        <div className="flex-1 min-w-0">
                             <p className="text-xs text-slate-400">Email</p>
-                            <p className="text-sm font-medium text-slate-700">
+                            <p className="text-sm font-medium text-slate-700 break-all">
                                 {email || '—'}
                             </p>
                             

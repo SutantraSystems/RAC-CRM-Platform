@@ -30,14 +30,14 @@ const Toast = ({ message, type = "success", duration = 2000, onClose }) => {
     const Icon = VARIANT_ICONS[type] || CheckCircle2;
 
     return (
-        <div className="fixed top-6 right-6 z-[100] pointer-events-none">
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:top-6 sm:right-6 z-[100] pointer-events-none flex justify-end">
             <div
-                className={`pointer-events-auto flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-lg border transition-all duration-300 ease-out ${VARIANT_STYLES[type]
+                className={`pointer-events-auto flex items-center gap-3 max-w-full px-4 py-3 bg-white rounded-xl shadow-lg border transition-all duration-300 ease-out ${VARIANT_STYLES[type]
                     } ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
                     }`}
             >
                 <Icon size={20} className={`shrink-0 ${type === "info" ? "animate-spin" : ""}`} />
-                <p className="text-sm font-medium text-slate-700">{message}</p>
+                <p className="text-sm font-medium text-slate-700 min-w-0 break-words">{message}</p>
             </div>
         </div>
     );

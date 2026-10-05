@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import AuthLoading from "../components/ui/AuthLoading";
 
 const ProtectedRoute = ({ children }) => {
 
@@ -11,14 +12,9 @@ const ProtectedRoute = ({ children }) => {
 
     // Wait until authentication check is complete
     if (loading) {
-        return (
-            <div>
-                Loading...
-            </div>
-        );
+        return <AuthLoading />;
     }
 
-    // User is not logged in
     if (!isAuthenticated) {
         return (
             <Navigate

@@ -536,9 +536,9 @@ export default function Students() {
 
       {/* Bulk Selection Toolbar */}
       {selectedCount > 0 && (
-        <div className="flex items-center justify-between bg-primary-50 border border-primary-100 rounded-2xl px-4 py-3 mb-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-primary-50 border border-primary-100 rounded-2xl px-3 sm:px-4 py-3 mb-3">
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
 
             <div className="flex items-center gap-2 text-primary-700 font-medium text-sm">
               <CheckCircle2 size={16} />
@@ -583,7 +583,7 @@ export default function Students() {
                 true
               )
             }
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-danger bg-red-50 hover:bg-red-100 transition-colors"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-danger bg-red-50 hover:bg-red-100 transition-colors"
           >
             <Trash2 size={15} />
             Delete Selected
@@ -617,12 +617,12 @@ export default function Students() {
 
       {/* Add / Edit Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-2 sm:p-4">
 
-          <div className="bg-white rounded-2xl shadow-card-hover w-full max-w-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-card-hover w-full max-w-xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
 
             {/* Modal Header */}
-            <div className="flex justify-between items-center px-5 py-3 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
+            <div className="flex justify-between items-center gap-2 px-4 sm:px-5 py-3 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
 
               <h2
                 className="text-base font-semibold text-slate-800"
@@ -647,7 +647,7 @@ export default function Students() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-4">
+            <div className="p-3 sm:p-4">
 
               <StudentForm
                 initialData={
@@ -666,17 +666,17 @@ export default function Students() {
 
       {/* Delete Confirmation Modal */}
       {showBulkDeleteConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4">
 
           <div
-            className="w-full max-w-md rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl"
             onClick={(e) =>
               e.stopPropagation()
             }
           >
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 sm:px-6 py-4">
 
               <h3
                 className="text-base font-semibold text-slate-800"
@@ -708,7 +708,7 @@ export default function Students() {
             </div>
 
             {/* Modal Body */}
-            <div className="px-6 py-5">
+            <div className="px-4 sm:px-6 py-5">
 
               <div className="flex items-start gap-3">
 
@@ -719,9 +719,9 @@ export default function Students() {
                   />
                 </div>
 
-                <div>
+                <div className="min-w-0">
 
-                  <p className="text-sm font-medium text-slate-700">
+                  <p className="text-sm font-medium text-slate-700 break-words">
                     {studentToDelete
                       ? `Are you sure you want to delete ${studentToDelete.full_name}?`
                       : "Are you sure you want to delete the selected students?"}
@@ -732,7 +732,7 @@ export default function Students() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 border-t border-slate-100 px-4 sm:px-6 py-4">
 
               <button
                 onClick={
@@ -742,7 +742,7 @@ export default function Students() {
                   bulkDeleting ||
                   deletingStudent
                 }
-                className="btn-outline rounded-xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="btn-outline w-full sm:w-auto rounded-xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -757,7 +757,7 @@ export default function Students() {
                   bulkDeleting ||
                   deletingStudent
                 }
-                className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full sm:w-auto rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {studentToDelete
                   ? deletingStudent

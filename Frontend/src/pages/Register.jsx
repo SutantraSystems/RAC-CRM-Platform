@@ -101,7 +101,7 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-3 py-6 sm:px-4">
             {toast && (
                 <Toast
                     message={toast.message}
@@ -110,24 +110,24 @@ const Register = () => {
                 />
             )}
 
-            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
+            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-5 sm:p-8">
 
                 {/* RAC Logo */}
                 <div className="flex justify-center mb-6">
                     <img
                         src={racLogo}
                         alt="RAC Logo"
-                        className="h-20 w-auto object-contain"
+                        className="h-16 sm:h-20 w-auto max-w-full object-contain"
                     />
                 </div>
 
                 {/* Heading */}
                 <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold text-gray-800">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
                         Create Account
                     </h1>
 
-                    <p className="text-gray-500 mt-2">
+                    <p className="text-sm sm:text-base text-gray-500 mt-2">
                         Sign up for your RAC CRM account
                     </p>
                 </div>
