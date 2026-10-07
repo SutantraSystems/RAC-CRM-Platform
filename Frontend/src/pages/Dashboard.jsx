@@ -58,6 +58,9 @@ export default function Dashboard() {
   // Status the cards are currently filtered by (set when Apply Filter runs).
   const [appliedStatus, setAppliedStatus] = useState("");
 
+  // Country / year the cards are currently filtered by (set when Apply Filter
+  // runs). A clicked card opens the Students list with the same filters, so
+  // the list matches the number on the card.
   const [appliedCountry, setAppliedCountry] = useState("");
   const [appliedYear, setAppliedYear] = useState(null);
 
@@ -145,6 +148,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Date filter bar */}
+      {/* Date filter bar */}
       <div className="bg-white rounded-2xl shadow-card p-4 sm:p-5 border border-slate-100 overflow-visible">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:flex lg:flex-wrap lg:items-end">
           <div className="flex flex-col gap-1 w-full lg:w-[160px] lg:shrink-0 min-w-0">
@@ -171,6 +175,7 @@ export default function Dashboard() {
               value={dateFilters.status}
               onChange={(val) => handleFilterChange("status", val)}
               options={STATUS_OPTIONS}
+              maxHeightClass="max-h-[28rem]"
               allLabel="All Status"
             />
           </div>

@@ -111,6 +111,10 @@ class RACStudent(models.Model):
     STATUS_APPLIED = "applied"
     STATUS_DEPOSIT_PAID = "deposit_paid"
     STATUS_VISA_GRANTED = "visa_granted"
+    STATUS_FUTURE_INTAKE = "future_intake"
+    STATUS_PRM_PROSPECT = "prm_prospect"
+    STATUS_NO_RESPONSE = "no_response"
+    STATUS_INVALID_NUMBER = "invalid_number"
 
     STATUS_CHOICES = [
         (STATUS_NOT_INTERESTED, "Not Interested"),
@@ -121,6 +125,10 @@ class RACStudent(models.Model):
         (STATUS_APPLIED, "Applied"),
         (STATUS_DEPOSIT_PAID, "Deposit Paid"),
         (STATUS_VISA_GRANTED, "Visa Granted"),
+        (STATUS_FUTURE_INTAKE, "Future Intake"),
+        (STATUS_PRM_PROSPECT, "PRM Prospect"),
+        (STATUS_NO_RESPONSE, "No Response"),
+        (STATUS_INVALID_NUMBER, "Invalid Number"),
     ]
 
     status = models.CharField(

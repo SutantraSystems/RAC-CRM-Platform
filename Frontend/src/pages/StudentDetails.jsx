@@ -8,7 +8,7 @@ import {
   deleteStudent,
 } from "../services/studentApi";
 import StudentForm from "../components/forms/StudentForm";
-import { getStatusLabel, STAGE_VALUES } from "../data/students";
+import { getStatusLabel } from "../data/students";
 import Toast from "../components/ui/Toast";
 import OverviewTab from "../components/studentDetails/OverviewTab";
 import DocumentsTab from "../components/studentDetails/DocumentsTab";
@@ -94,30 +94,11 @@ export default function StudentDetails() {
     }
   };
 
-  // Save a new status / stage. Updates the screen straight away, then rolls back if the server rejects it.
+  // Save the new status, rolling back if the server rejects it
   const handleStatusChange = async (newStatus) => {
     const previous = student.status || "not_sure";
     if (newStatus === previous) return;
 
-    // "Not Interested" / "Not Sure" can always be chosen. Pipeline stages must follow the order: from outside the pipeline only the first stage can be picked, inside it only the next stage.
-    if (newStatus !== "not_interested" && newStatus !== "not_sure") {
-      const currentIndex = STAGE_VALUES.indexOf(previous);
-      const newIndex = STAGE_VALUES.indexOf(newStatus);
-      const nextIndex = currentIndex === -1 ? 0 : currentIndex + 1;
-
-      if (newIndex !== nextIndex) {
-        setToast({
-          type: "error",
-          message:
-            newIndex < nextIndex
-              ? `${getStatusLabel(newStatus)} stage is already completed.`
-              : `Please complete the ${getStatusLabel(
-                  STAGE_VALUES[nextIndex]
-                )} stage first.`,
-        });
-        return;
-      }
-    }
     setStudent((prev) => ({ ...prev, status: newStatus }));
 
     try {

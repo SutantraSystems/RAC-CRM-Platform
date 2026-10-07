@@ -1,290 +1,251 @@
-import React, { useState, useEffect } from "react";
-import { Check, FileText, Eye } from "lucide-react";
-import FilterDropdown from "../ui/FilterDropdown";
-
-// import { getStudentDocuments } from "../../services/studentDetailsApi";
-
+import React from "react";
 import {
-  STATUS_OPTIONS,
-  STAGE_VALUES,
-  getStatusLabel,
-} from "../../data/students";
+  Check,
+  FileText,
+  ThumbsUp,
+  ThumbsDown,
+  HelpCircle,
+  ListChecks,
+  Send,
+  CreditCard,
+  BadgeCheck,
+  CalendarClock,
+  UserCheck,
+  PhoneMissed,
+  PhoneOff,
+  User,
+  CalendarDays,
+  Phone,
+  Mail,
+  MapPin,
+  Contact,
+  GraduationCap,
+  Globe2,
+  CalendarRange,
+  WalletCards,
+  BriefcaseBusiness,
+  FolderOpen,
+} from "lucide-react";
 
-const Row = ({ label, value }) => (
-  <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:gap-4 px-4 sm:px-5 py-3">
-    <p className="text-sm text-slate-600 font-medium sm:w-36 sm:shrink-0">
-      {label}
-    </p>
+import FilterDropdown from "../ui/FilterDropdown";
+import { STATUS_OPTIONS } from "../../data/students";
 
-    <p className="min-w-0 text-sm font-semibold text-slate-800 break-words">
-      {value || "—"}
-    </p>
-  </div>
-);
+const STATUS_ICONS = {
+  not_interested: ThumbsDown,
+  interested: ThumbsUp,
+  not_sure: HelpCircle,
+  shortlisting_done: ListChecks,
+  docs_shared: FileText,
+  applied: Send,
+  deposit_paid: CreditCard,
+  visa_granted: BadgeCheck,
+  future_intake: CalendarClock,
+  prm_prospect: UserCheck,
+  no_response: PhoneMissed,
+  invalid_number: PhoneOff,
+};
 
-const Section = ({
-  title,
-  children,
-  padded = false,
-  className = "",
-}) => (
-  <div
-    className={`bg-white rounded-2xl shadow-md border border-slate-300 overflow-hidden ${className}`}
-  >
-    <div className="px-4 sm:px-5 py-3 border-b border-slate-300 bg-slate-100">
-      <h3 className="font-display font-semibold text-slate-800 text-sm">
+const FIELD_ICONS = {
+  "Full Name": User,
+  "Date of Birth": CalendarDays,
+  "Mobile Number": Phone,
+  Email: Mail,
+  "Passport Number": Contact,
+  Address: MapPin,
+  "Parent Name": User,
+  Location: MapPin,
+  "Academic Details": GraduationCap,
+  "Test Score": BadgeCheck,
+  "Preferred Country": Globe2,
+  Intake: CalendarRange,
+  "Intake Year": CalendarDays,
+  Budget: WalletCards,
+  "Work Experience": BriefcaseBusiness,
+  "Source File": FolderOpen,
+};
+
+const InfoRow = ({ label, value }) => {
+  const Icon = FIELD_ICONS[label] || User;
+
+  return (
+    <div className="group flex items-center gap-3 px-3 py-2 transition-colors hover:bg-slate-50 sm:px-4">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-colors group-hover:bg-primary-50 group-hover:text-primary-600">
+        <Icon size={16} strokeWidth={1.8} />
+      </div>
+
+      <p className="w-28 shrink-0 text-sm font-medium text-slate-500 sm:w-36">
+        {label}
+      </p>
+
+      <p className="min-w-0 flex-1 break-words text-base font-semibold leading-snug text-slate-800">
+        {value || "—"}
+      </p>
+    </div>
+  );
+};
+
+const InfoSection = ({ title, children }) => (
+  <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="border-b border-slate-200 bg-slate-50/80 px-3 py-2.5 sm:px-4">
+      <h3 className="text-base font-semibold text-slate-800">
         {title}
       </h3>
     </div>
 
-    <div
-      className={
-        padded
-          ? "p-4 sm:p-5"
-          : "divide-y divide-slate-200"
-      }
-    >
+    <div className="divide-y divide-slate-100">
       {children}
     </div>
-  </div>
+  </section>
 );
 
-/*
-const getFileName = (url) => {
-  if (!url) return "Document";
+// No overflow-hidden here, it would clip the dropdown menu
+const StatusCards = ({ status, onStatusChange }) => (
+  <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="flex flex-col gap-3 rounded-t-2xl border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+          <ListChecks size={18} />
+        </div>
 
-  try {
-    return decodeURIComponent(
-      url.split("?")[0].split("/").pop()
-    );
-  } catch {
-    return "Document";
-  }
-};
-*/
-
-// Application progress
-const StageTracker = ({
-  status,
-  onStatusChange,
-}) => {
-  const currentIndex =
-    STAGE_VALUES.indexOf(status);
-
-  const enabled = currentIndex !== -1;
-
-  return (
-    <div className="bg-white rounded-2xl shadow-md border border-slate-300 p-4 sm:p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-5 sm:mb-6">
-        <div className="min-w-0">
-          <h3 className="font-display font-semibold text-slate-800 text-sm">
-            Application Progress
+        <div>
+          <h3 className="text-base font-semibold text-slate-800">
+            Application Status
           </h3>
 
-          <p className="text-xs text-slate-500 mt-1">
-            {enabled
-              ? "Complete each step in order to move forward."
-              : `Status is ${getStatusLabel(
-                  status
-                )}. Set it to Interested to start tracking progress.`}
+          <p className="text-xs leading-tight text-slate-500">
+            Select any status to update the application.
           </p>
         </div>
-
-        <div className="w-full sm:w-44 sm:shrink-0">
-          <FilterDropdown
-            value={status}
-            onChange={onStatusChange}
-            options={STATUS_OPTIONS}
-            showAllOption={false}
-          />
-        </div>
       </div>
 
-      <div className="overflow-x-auto overscroll-x-contain px-1 pt-1 pb-2 -mx-1">
-        <div className="flex min-w-[520px] sm:min-w-0">
-          {STAGE_VALUES.map((value, i) => {
-            const done =
-              enabled && i < currentIndex;
-
-            const current =
-              enabled && i === currentIndex;
-
-            const lineActive =
-              enabled && i <= currentIndex;
-
-            const clickable =
-              enabled && (i === currentIndex || i === currentIndex + 1);
-
-            const dot = !enabled
-              ? "bg-slate-100 border-slate-300 text-slate-400"
-              : done
-              ? "bg-green-500 border-green-500 text-white"
-              : current
-              ? "bg-primary-600 border-primary-600 text-white ring-4 ring-primary-200"
-              : clickable
-              ? "bg-white border-primary-300 text-primary-500 group-hover:border-primary-400"
-              : "bg-white border-slate-200 text-slate-300";
-
-            return (
-              <button
-                key={value}
-                type="button"
-                disabled={!clickable}
-                onClick={() =>
-                  clickable &&
-                  value !== status &&
-                  onStatusChange(value)
-                }
-                title={
-                  !enabled
-                    ? undefined
-                    : clickable
-                    ? undefined
-                    : "Complete the previous steps first"
-                }
-                className={`group relative flex-1 flex flex-col items-center px-1 ${
-                  clickable
-                    ? "cursor-pointer"
-                    : "cursor-not-allowed"
-                }`}
-              >
-                {i > 0 && (
-                  <span
-                    className={`absolute top-4 -left-1/2 w-full h-0.5 ${
-                      lineActive
-                        ? "bg-green-500"
-                        : "bg-slate-200"
-                    }`}
-                  />
-                )}
-
-                <span
-                  className={`relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-semibold transition-colors ${dot}`}
-                >
-                  {done ? (
-                    <Check size={14} />
-                  ) : (
-                    i + 1
-                  )}
-                </span>
-
-                <span
-                  className={`mt-2 text-xs text-center leading-tight ${
-                    !enabled || !clickable
-                      ? "text-slate-400"
-                      : current
-                      ? "font-semibold text-slate-800"
-                      : "text-slate-600"
-                  }`}
-                >
-                  {getStatusLabel(value)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="w-full sm:w-48 sm:shrink-0">
+        <FilterDropdown
+          value={status}
+          onChange={onStatusChange}
+          options={STATUS_OPTIONS}
+          showAllOption={false}
+        />
       </div>
     </div>
-  );
-};
+
+    <div className="p-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        {STATUS_OPTIONS.map((option) => {
+          const Icon = STATUS_ICONS[option.value] || HelpCircle;
+          const selected = option.value === status;
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                if (!selected) {
+                  onStatusChange(option.value);
+                }
+              }}
+              className={`group flex min-w-0 items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-all duration-200 ${
+                selected
+                  ? "border-green-400 bg-green-50 ring-1 ring-green-200"
+                  : "border-slate-200 bg-white hover:border-primary-300 hover:bg-primary-50/40"
+              }`}
+            >
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                  selected
+                    ? "bg-green-500 text-white"
+                    : "bg-slate-100 text-slate-500 group-hover:bg-primary-100 group-hover:text-primary-600"
+                }`}
+              >
+                <Icon size={16} />
+              </span>
+
+              <span
+                className={`min-w-0 flex-1 break-words text-sm font-semibold leading-tight ${
+                  selected ? "text-green-800" : "text-slate-700"
+                }`}
+              >
+                {option.label}
+              </span>
+
+              {selected && (
+                <Check size={16} strokeWidth={3} className="shrink-0 text-green-600" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+);
 
 export default function OverviewTab({
   student,
   onStatusChange,
 }) {
-  /*
-  const [documents, setDocuments] = useState([]);
-  const [docsLoading, setDocsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        setDocsLoading(true);
-
-        const response =
-          await getStudentDocuments(student.id);
-
-        setDocuments(response.data);
-      } catch (error) {
-        console.error(
-          "Failed to load documents:",
-          error
-        );
-      } finally {
-        setDocsLoading(false);
-      }
-    };
-
-    fetchDocuments();
-  }, [student.id]);
-  */
+  const currentStatus = student.status || "not_sure";
 
   return (
-    <div className="space-y-4 sm:space-y-5">
-      {/* Application Progress */}
-      <StageTracker
-        status={student.status || "not_sure"}
+    <div className="space-y-3 sm:space-y-4">
+      <StatusCards
+        status={currentStatus}
         onStatusChange={onStatusChange}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 items-start">
-        {/* Personal Information */}
-        <Section title="Personal Information">
-          <Row
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
+        <InfoSection title="Personal Information">
+          <InfoRow
             label="Full Name"
             value={student.full_name}
           />
 
-          <Row
+          <InfoRow
             label="Date of Birth"
             value={student.dob}
           />
 
-          <Row
+          <InfoRow
             label="Mobile Number"
             value={student.mobile_number}
           />
 
-          <Row
+          <InfoRow
             label="Email"
             value={student.email}
           />
 
-          <Row
+          <InfoRow
             label="Passport Number"
             value={student.passport_number}
           />
 
-          <Row
+          <InfoRow
             label="Address"
             value={student.address}
           />
 
-          <Row
+          <InfoRow
             label="Parent Name"
             value={student.parent_name}
           />
+        </InfoSection>
 
-        </Section>
-
-        {/* Academic / Application Information */}
-        <Section title="Academic / Application Information">
-          <Row
+        <InfoSection title="Academic / Application Information">
+          <InfoRow
             label="Academic Details"
             value={student.academic_details}
           />
 
-          <Row
+          <InfoRow
             label="Test Score"
             value={student.test_score}
           />
 
-          <Row
+          <InfoRow
             label="Preferred Country"
             value={student.preferred_country}
           />
 
-          <Row
+          <InfoRow
             label="Intake"
             value={
               student.intake === "fall"
@@ -297,84 +258,26 @@ export default function OverviewTab({
             }
           />
 
-          <Row
+          <InfoRow
             label="Intake Year"
             value={student.year}
           />
 
-          <Row
+          <InfoRow
             label="Budget"
             value={student.budget}
           />
 
-          <Row
+          <InfoRow
             label="Work Experience"
             value={student.work_experience}
           />
 
-          <Row
+          <InfoRow
             label="Source File"
             value={student.source_file || "Manually Added"}
           />
-        </Section>
-
-        {/*
-
-        <Section
-          title={`Documents${
-            documents.length
-              ? ` (${documents.length})`
-              : ""
-          }`}
-          padded
-          className="lg:col-span-2"
-        >
-          {docsLoading ? (
-            <p className="text-sm text-slate-500">
-              Loading documents...
-            </p>
-          ) : documents.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              No documents uploaded yet.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {documents.map((doc) => (
-                <a
-                  key={doc.id}
-                  href={doc.file}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={getFileName(doc.file)}
-                  className="group flex flex-col gap-3 bg-slate-50 hover:bg-primary-50 border border-slate-200 hover:border-primary-200 rounded-xl p-3 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 shrink-0 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-primary-600">
-                      <FileText size={16} />
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">
-                        {doc.document_type || "Document"}
-                      </p>
-
-                      <p className="text-xs text-slate-500 truncate">
-                        {getFileName(doc.file)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-primary-600 group-hover:text-primary-700">
-                    <Eye size={13} />
-                    View
-                  </span>
-                </a>
-              ))}
-            </div>
-          )}
-        </Section>
-
-        */}
+        </InfoSection>
       </div>
     </div>
   );

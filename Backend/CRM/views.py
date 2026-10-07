@@ -68,7 +68,7 @@ def normalize_mobile_number(value):
     return value
 
 def filter_by_status(queryset, status_param):
-    """Filter by status. Not Sure is the catch-all: any student whose status is not one of the other seven (blank, missing, unknown) counts as Not Sure."""
+    """Filter by status. Not Sure is the catch-all: any student whose status is not one of the other statuses (blank, missing, unknown) counts as Not Sure."""
     if status_param == RACStudent.STATUS_NOT_SURE:
         others = [
             value for value, _ in RACStudent.STATUS_CHOICES
@@ -198,8 +198,8 @@ def parse_budget(value):
     except Exception:
         return None
 
-# Parse an Excel cell into one of the valid Intake choices.A blank or unrecognised value becomes "not_sure".
-
+# Parse an Excel cell into one of the valid Intake choices.
+# A blank or unrecognised value becomes "not_sure".
 def parse_intake(value):
     if pd.isna(value):
         return "not_sure"
@@ -642,8 +642,8 @@ def student_status_summary(request):
     for row in counts:
         key = row["status"]
         if key not in summary:
-            key = RACStudent.STATUS_NOT_SURE  
-        summary[key] += row["count"] 
+            key = RACStudent.STATUS_NOT_SURE  # blank / unknown -> Not Sure
+        summary[key] += row["count"]  # so the statuses always add up to the total
 
     return Response(summary)
 
