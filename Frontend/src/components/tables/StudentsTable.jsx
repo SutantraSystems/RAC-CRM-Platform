@@ -6,6 +6,7 @@ export default function StudentsTable({
   page,
   total,
   totalPages,
+  pageSize = 25,
   setPage,
   onAdd,
   onEdit,
@@ -220,10 +221,7 @@ export default function StudentsTable({
                     </td>
 
                     {/* Status */}
-                    <td
-                      className="px-2 py-1.5 whitespace-nowrap"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <td className="px-2 py-1.5 whitespace-nowrap">
                       <span className="text-sm font-medium text-slate-700">
                         {getStatusLabel(currentStatus)}
                       </span>
@@ -235,12 +233,7 @@ export default function StudentsTable({
                     </td>
 
                     {/* Actions */}
-                    <td
-                      className="px-2 py-1.5 rounded-r-xl"
-                      onClick={(e) =>
-                        e.stopPropagation()
-                      }
-                    >
+                    <td className="px-2 py-1.5 rounded-r-xl">
                       <div className="flex items-center gap-2">
                         {/* View */}
                         <button
@@ -315,11 +308,11 @@ export default function StudentsTable({
             <p className="text-sm text-slate-500 text-center md:text-left">
               Showing{" "}
               <span className="font-semibold text-slate-700">
-                {(page - 1) * 10 + 1}
+                {(page - 1) * pageSize + 1}
               </span>
               {" – "}
               <span className="font-semibold text-slate-700">
-                {Math.min(page * 10, total)}
+                {Math.min(page * pageSize, total)}
               </span>
               {" of "}
               <span className="font-semibold text-slate-700">

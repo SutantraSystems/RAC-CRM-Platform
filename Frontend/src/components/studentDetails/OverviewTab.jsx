@@ -63,27 +63,6 @@ const getFileName = (url) => {
 };
 */
 
-const getAllowedStatusOptions = (status) => {
-  const currentIndex = STAGE_VALUES.indexOf(status);
-  const enabled = currentIndex !== -1;
-
-  return STATUS_OPTIONS.filter((opt) => {
-    if (opt.value === "not_interested" || opt.value === "not_sure") {
-      return true;
-    }
-
-    const stageIndex = STAGE_VALUES.indexOf(opt.value);
-    if (stageIndex === -1) return false;
-
-    if (!enabled) {
-      // Not currently in the pipeline — only the first stage can start it.
-      return stageIndex === 0;
-    }
-
-    return stageIndex === currentIndex || stageIndex === currentIndex + 1;
-  });
-};
-
 // Application progress
 const StageTracker = ({
   status,
@@ -115,7 +94,7 @@ const StageTracker = ({
           <FilterDropdown
             value={status}
             onChange={onStatusChange}
-            options={getAllowedStatusOptions(status)}
+            options={STATUS_OPTIONS}
             showAllOption={false}
           />
         </div>
@@ -133,9 +112,6 @@ const StageTracker = ({
             const lineActive =
               enabled && i <= currentIndex;
 
-            // Only the current step and the very next one are clickable —
-            // you can revisit/undo back to the current step, or advance
-            // exactly one step at a time. No skipping ahead.
             const clickable =
               enabled && (i === currentIndex || i === currentIndex + 1);
 
@@ -289,10 +265,6 @@ export default function OverviewTab({
             value={student.parent_name}
           />
 
-          <Row
-            label="Location"
-            value={student.location}
-          />
         </Section>
 
         {/* Academic / Application Information */}

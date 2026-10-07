@@ -5,10 +5,28 @@ export default function KpiCard({
   value,
   trend,
   trendValue,
+  onClick,
 }) {
+  const clickable = typeof onClick === "function";
+
   return (
     <div
-      className="
+      {...(clickable && {
+        role: "button",
+        tabIndex: 0,
+        onClick,
+        title: `View ${title} students`,
+        onKeyDown: (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        },
+      })}
+      className={`
+        ${clickable
+          ? "cursor-pointer hover:border-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+          : ""}
         bg-slate-50
         border
         border-slate-200
@@ -21,7 +39,7 @@ export default function KpiCard({
         transition-all
         duration-200
         hover:shadow-card
-      "
+      `}
     >
       {/* Title */}
       <h4 className="text-sm font-medium text-slate-700 mb-2 break-words">

@@ -23,8 +23,20 @@ const DEFAULT_FILTERS = {
   source_file: "",
 };
 
-export default function StudentFilters({ onFilter, onClear }) {
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+// Turn the applied filters (from the URL) into the values shown in the inputs.
+const toDraft = (applied) => ({
+  ...DEFAULT_FILTERS,
+  ...(applied || {}),
+  year: applied?.year || null,
+});
+
+export default function StudentFilters({ onFilter, onClear, appliedFilters }) {
+  const [filters, setFilters] = useState(() => toDraft(appliedFilters));
+
+  // Show the filters that are actually applied, e.g. when coming back from Student Details or when the URL is changed. Typing without applying is not touched, because appliedFilters only changes when a value changes.
+  useEffect(() => {
+    setFilters(toDraft(appliedFilters));
+  }, [appliedFilters]);
   const [sourceFileOptions, setSourceFileOptions] = useState([]);
 
   useEffect(() => {
@@ -78,7 +90,7 @@ export default function StudentFilters({ onFilter, onClear }) {
 
             <input
               type="text"
-              placeholder="Search "
+              placeholder="Search Anything...."
               value={filters.search}
               onChange={(e) => handleChange("search", e.target.value)}
               className="input-field w-full pl-9"

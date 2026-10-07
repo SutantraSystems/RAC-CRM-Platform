@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FileText,
   ShieldCheck,
@@ -49,11 +50,16 @@ const DEFAULT_DATE_FILTERS = {
 };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   const [dateFilters, setDateFilters] = useState(DEFAULT_DATE_FILTERS);
   const [studentCount, setStudentCount] = useState(0);
   const [statusSummary, setStatusSummary] = useState({});
   // Status the cards are currently filtered by (set when Apply Filter runs).
   const [appliedStatus, setAppliedStatus] = useState("");
+
+  const [appliedCountry, setAppliedCountry] = useState("");
+  const [appliedYear, setAppliedYear] = useState(null);
 
   const fetchDashboardData = async (filtersOverride) => {
     const activeFilters = filtersOverride || dateFilters;
@@ -82,6 +88,8 @@ export default function Dashboard() {
       setStudentCount(countRes.data.total_students);
       setStatusSummary(summaryRes.data);
       setAppliedStatus(activeFilters.status || "");
+      setAppliedCountry(activeFilters.country || "");
+      setAppliedYear(activeFilters.year || null);
     } catch (err) {
       console.error("Error fetching dashboard data", err);
     }
@@ -101,6 +109,26 @@ export default function Dashboard() {
   const handleClearFilters = () => {
     setDateFilters(DEFAULT_DATE_FILTERS);
     fetchDashboardData(DEFAULT_DATE_FILTERS);
+  };
+
+  // Open the Students list for a card: its status + the applied country/year.
+  const openStudentList = (status) => {
+    const params = new URLSearchParams();
+
+    if (status) {
+      params.set("status", status);
+    }
+
+    if (appliedCountry) {
+      params.set("country", appliedCountry);
+    }
+
+    if (appliedYear && appliedYear !== "all") {
+      params.set("year", String(appliedYear));
+    }
+
+    const query = params.toString();
+    navigate(query ? `/students?${query}` : "/students");
   };
 
   const kpiCards = appliedStatus
@@ -175,6 +203,9 @@ export default function Dashboard() {
             title={kpi.title}
             value={kpi.value}
             index={i}
+            onClick={() =>
+              openStudentList(kpi.key === "total" ? appliedStatus : kpi.key)
+            }
           />
         ))}
       </div>
