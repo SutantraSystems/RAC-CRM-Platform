@@ -198,14 +198,15 @@ def parse_budget(value):
     except Exception:
         return None
 
-# Parse an Excel cell into one of the valid Intake choices.
+# Parse an Excel cell into one of the valid Intake choices.A blank or unrecognised value becomes "not_sure".
+
 def parse_intake(value):
     if pd.isna(value):
-        return None
+        return "not_sure"
 
     value = str(value).strip().lower().replace(" ", "_")
     valid = {"fall", "winter", "spring", "not_sure"}
-    return value if value in valid else None
+    return value if value in valid else "not_sure"
 
 
 # Parse an Excel cell into a 4-digit year, defaulting to 2026.
@@ -521,6 +522,7 @@ class UploadStudentsAPIView(APIView):
                         )
                     )               
 
+
                 if to_insert:
 
                     RACStudent.objects.bulk_create(
@@ -640,8 +642,8 @@ def student_status_summary(request):
     for row in counts:
         key = row["status"]
         if key not in summary:
-            key = RACStudent.STATUS_NOT_SURE  # blank / unknown -> Not Sure
-        summary[key] += row["count"]  # so the statuses always add up to the total
+            key = RACStudent.STATUS_NOT_SURE  
+        summary[key] += row["count"] 
 
     return Response(summary)
 

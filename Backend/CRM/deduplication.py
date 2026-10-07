@@ -49,10 +49,15 @@ def normalize_for_comparison(value):
 
 #Create a unique value based on the student's duplicate-check fields.
 def build_dedup_hash(data):
-    values = [
-        normalize_for_comparison(data.get(field))
-        for field in DUPLICATE_CHECK_FIELDS
-    ]
+    values = []
+    for field in DUPLICATE_CHECK_FIELDS:
+        value = normalize_for_comparison(data.get(field))
+
+        # A blank intake is stored as "not_sure"
+        if field == "intake" and value == "not_sure":
+            value = None
+
+        values.append(value)
     canonical_value = json.dumps(
         values,
         ensure_ascii=False,
@@ -60,9 +65,9 @@ def build_dedup_hash(data):
     )
     return hashlib.sha256(canonical_value.encode("utf-8")).hexdigest()
 
-# Unique email / unique mobile number
+# Unique email / unique mobile number, stripped + lower-cased
 def normalize_email(value):
-    return normalize_for_comparison(value)  # stripped + lower-cased
+    return normalize_for_comparison(value) 
 
 def normalize_mobile(value):
     """Digits only, last 10 digits, so '+91 98765-43210' == '9876543210'."""

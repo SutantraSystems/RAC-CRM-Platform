@@ -69,6 +69,7 @@ class RACStudent(models.Model):
     intake = models.CharField(
         max_length=20,
         choices=INTAKE_CHOICES,
+        default=INTAKE_NOT_SURE,
         null=True,
         blank=True,
     )
@@ -169,6 +170,10 @@ class RACStudent(models.Model):
         ordering = ["-created_at" ,"-id"]
 
     def save(self, *args, **kwargs):
+        # A blank intake is stored as "Not Sure" (never NULL / empty).
+        if not self.intake:
+            self.intake = self.INTAKE_NOT_SURE
+
         data = {
             field: getattr(self, field)
             for field in DUPLICATE_CHECK_FIELDS

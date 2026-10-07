@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   getStudents,
   createStudent,
@@ -13,6 +13,20 @@ import StudentsTable from "../components/tables/StudentsTable";
 import StudentForm from "../components/forms/StudentForm";
 import Toast from "../components/ui/Toast";
 import { CheckCircle2, Trash2 } from "lucide-react";
+
+// Rows shown per page in the Students list.
+const PAGE_SIZE = 25;
+
+// Applied list filters. These (plus the page number) are kept in the URL query string, e.g. /students?page=2&country=Canada&status=active
+const EMPTY_FILTERS = {
+  search: "",
+  country: "",
+  intake: "",
+  year: "",
+  status: "",
+  source_file: "",
+};
+const FILTER_KEYS = Object.keys(EMPTY_FILTERS);
 
 const getErrorMessage = (data, fallback) => {
   if (!data) return fallback;
@@ -40,26 +54,68 @@ const getErrorMessage = (data, fallback) => {
 
 export default function Students() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [students, setStudents] = useState([]);
 
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const [showForm, setShowForm] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // Filters state
-  const [filters, setFilters] = useState({
-    search: "",
-    country: "",
-    intake: "",
-    year: "",
-    status: "",
-    source_file: "",
-  });
+  // Page + applied filters live in the URL, so they survive opening a student and coming back, a refresh, and the browser Back button.
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const pageParam = parseInt(searchParams.get("page"), 10);
+  const page = pageParam > 0 ? pageParam : 1;
+
+  const search = searchParams.get("search") || "";
+  const country = searchParams.get("country") || "";
+  const intake = searchParams.get("intake") || "";
+  const status = searchParams.get("status") || "";
+  const source_file = searchParams.get("source_file") || "";
+  const yearParam = searchParams.get("year") || "";
+  // Years are numbers in the picker; "all" stays a string.
+  const year = /^\d+$/.test(yearParam) ? Number(yearParam) : yearParam;
+
+  // Only changes when a filter VALUE changes (not when just the page does), so paging does not clear the row selection.
+  const filters = useMemo(
+    () => ({ search, country, intake, year, status, source_file }),
+    [search, country, intake, year, status, source_file]
+  );
+
+  // Bumped on Apply / Clear so they still refetch even if the values are unchanged (same behaviour as before the URL was used).
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Write the page and filters to the URL. `replace` keeps history clean: paging/filtering does not add Back-button steps.
+  const updateListParams = (nextPage, nextFilters) => {
+    const params = new URLSearchParams();
+
+    if (nextPage > 1) {
+      params.set("page", String(nextPage));
+    }
+
+    FILTER_KEYS.forEach((key) => {
+      const value = nextFilters?.[key];
+
+      if (value !== null && value !== undefined && value !== "") {
+        params.set(key, String(value));
+      }
+    });
+
+    setSearchParams(params, { replace: true });
+  };
+
+  // Same call style as the old useState setter (value or updater function).
+  const setPage = (next) => {
+    const nextPage = typeof next === "function" ? next(page) : next;
+
+    if (nextPage !== page) {
+      updateListParams(nextPage, filters);
+    }
+  };
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -82,6 +138,7 @@ export default function Students() {
   const buildParams = (pageNumber, filtersData) => {
     const params = {
       page: pageNumber,
+      page_size: PAGE_SIZE,
     };
 
     if (filtersData.search) {
@@ -156,9 +213,14 @@ export default function Students() {
 
       setStudents(response.data.data);
       setTotal(response.data.total);
-      setPage(response.data.page);
       setTotalPages(response.data.total_pages);
     } catch (error) {
+      // The page in the URL no longer exists (edited URL, or the last row of the last page was deleted): fall back to page 1.
+      if (error.response?.status === 404 && pageNumber > 1) {
+        updateListParams(1, filtersData);
+        return;
+      }
+
       console.error(
         "Error loading students:",
         error
@@ -169,32 +231,24 @@ export default function Students() {
   // Auto refetch when page or filters change
   useEffect(() => {
     fetchStudents(page, filters);
-  }, [page, filters]);
+  }, [page, filters, reloadKey]);
 
   // Clear selection when filters change
   useEffect(() => {
     setSelectedIds(new Set());
     setAllMatchingSelected(false);
-  }, [filters]);
+  }, [filters, reloadKey]);
 
-  // Handle filter apply
+  // Handle filter apply (a new filter set always starts on page 1)
   const handleFilter = (newFilters) => {
-    setFilters(newFilters);
-    setPage(1);
+    updateListParams(1, newFilters);
+    setReloadKey((key) => key + 1);
   };
 
   // Handle reset filters
   const handleReset = () => {
-    setFilters({
-      search: "",
-      country: "",
-      intake: "",
-      year: "",
-      status: "",
-      source_file: "",
-    });
-
-    setPage(1);
+    updateListParams(1, EMPTY_FILTERS);
+    setReloadKey((key) => key + 1);
   };
 
   // Add student modal
@@ -209,9 +263,11 @@ export default function Students() {
     setShowForm(true);
   };
 
-  // Navigate to Student Details
+  // Navigate to Student Details `from` remembers this exact list URL (page + filters) so that "Back to Students" can return to it.
   const handleViewDetails = (id) => {
-    navigate(`/students/${id}`);
+    navigate(`/students/${id}`, {
+      state: { from: `${location.pathname}${location.search}` },
+    });
   };
 
   // Save student
@@ -532,6 +588,7 @@ export default function Students() {
       <StudentFilters
         onFilter={handleFilter}
         onClear={handleReset}
+        appliedFilters={filters}
       />
 
       {/* Bulk Selection Toolbar */}
@@ -597,6 +654,7 @@ export default function Students() {
         page={page}
         total={total}
         totalPages={totalPages}
+        pageSize={PAGE_SIZE}
         setPage={setPage}
         onAdd={handleAdd}
         onEdit={handleEdit}
