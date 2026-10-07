@@ -90,7 +90,7 @@ export default function StudentFilters({ onFilter, onClear, appliedFilters }) {
 
             <input
               type="text"
-              placeholder="Search Anything...."
+              placeholder="Search "
               value={filters.search}
               onChange={(e) => handleChange("search", e.target.value)}
               className="input-field w-full pl-9"
@@ -132,6 +132,7 @@ export default function StudentFilters({ onFilter, onClear, appliedFilters }) {
             value={filters.status}
             onChange={(val) => handleChange("status", val)}
             options={STATUS_OPTIONS}
+            maxHeightClass="max-h-[28rem]"
             allLabel="All Status"
           />
         </div>

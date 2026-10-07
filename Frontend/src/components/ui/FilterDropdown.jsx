@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
 
+// Menu shows 4 options (plus the "All" row when present), the rest scrolls
+const VISIBLE_OPTIONS = 4;
+const ROW_REM = 2.25;
+
 export default function FilterDropdown({
   value,
   onChange,
@@ -13,6 +17,9 @@ export default function FilterDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState(null);
+  const visibleRows =
+    Math.min(options.length, VISIBLE_OPTIONS) + (showAllOption ? 1 : 0);
+  const menuMaxHeight = `${visibleRows * ROW_REM + 0.625}rem`;
   const wrapperRef = useRef(null);
 
   useEffect(() => {
@@ -32,7 +39,7 @@ export default function FilterDropdown({
       return;
     }
     const rect = wrapperRef.current.getBoundingClientRect();
-    const menuHeight = (options.length + (showAllOption ? 1 : 0)) * 38 + 8;
+    const menuHeight = parseFloat(menuMaxHeight) * 16;
     const openUp = window.innerHeight - rect.bottom < menuHeight + 8;
     setMenuPos({
       top: openUp ? rect.top - menuHeight - 4 : rect.bottom + 4,
@@ -46,7 +53,7 @@ export default function FilterDropdown({
       window.removeEventListener("scroll", close, true);
       window.removeEventListener("resize", close);
     };
-  }, [open, fixedMenu, options.length, showAllOption]);
+  }, [open, fixedMenu, menuMaxHeight]);
 
   const selectedOption = options.find((opt) => opt.value === value);
   const displayLabel = value ? selectedOption?.label || value : allLabel;
@@ -71,8 +78,13 @@ export default function FilterDropdown({
 
       {open && (!fixedMenu || menuPos) && (
         <div
-          style={fixedMenu && menuPos ? { position: "fixed", top: menuPos.top, left: menuPos.left, width: menuPos.width } : undefined}
-          className={`${fixedMenu ? "z-[200]" : "absolute left-0 z-50 mt-1 w-full min-w-[160px] max-w-[calc(100vw-2rem)]"} max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-card-hover py-1`}
+          style={{
+            maxHeight: menuMaxHeight,
+            ...(fixedMenu && menuPos
+              ? { position: "fixed", top: menuPos.top, left: menuPos.left, width: menuPos.width }
+              : {}),
+          }}
+          className={`${fixedMenu ? "z-[200]" : "absolute left-0 z-50 mt-1 w-full min-w-[160px] max-w-[calc(100vw-2rem)]"} overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-card-hover py-1`}
         >
           {showAllOption && (
           <button

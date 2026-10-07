@@ -239,6 +239,10 @@ export const STATUS_OPTIONS = [
   { value: "applied", label: "Applied" },
   { value: "deposit_paid", label: "Deposit Paid" },
   { value: "visa_granted", label: "Visa Granted" },
+  { value: "future_intake", label: "Future Intake" },
+  { value: "prm_prospect", label: "PRM Prospect" },
+  { value: "no_response", label: "No Response" },
+  { value: "invalid_number", label: "Invalid Number" },
 ];
 
 // Progress tracker steps, in order. The tracker is enabled only for these.
