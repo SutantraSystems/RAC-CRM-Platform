@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Filter, Search, X } from "lucide-react";
-import { countryList, STATUS_OPTIONS } from "../../data/students";
 import FilterDropdown from "../ui/FilterDropdown";
 import YearFilterCalendar from "../ui/YearPicker";
 import { getStudentSourceFiles } from "../../services/studentApi";
-
-const countryOptions = countryList.map((c) => ({ value: c, label: c }));
-
-const intakeOptions = [
-  { value: "fall", label: "Fall" },
-  { value: "winter", label: "Winter" },
-  { value: "spring", label: "Spring" },
-  { value: "not_sure", label: "Not Sure" },
-];
+import { COUNTRY_OPTIONS, STATUS_OPTIONS, INTAKE_OPTIONS } from "../../config/crmConfig";
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -33,7 +24,6 @@ const toDraft = (applied) => ({
 export default function StudentFilters({ onFilter, onClear, appliedFilters }) {
   const [filters, setFilters] = useState(() => toDraft(appliedFilters));
 
-  // Show the filters that are actually applied, e.g. when coming back from Student Details or when the URL is changed. Typing without applying is not touched, because appliedFilters only changes when a value changes.
   useEffect(() => {
     setFilters(toDraft(appliedFilters));
   }, [appliedFilters]);
@@ -103,7 +93,7 @@ export default function StudentFilters({ onFilter, onClear, appliedFilters }) {
           <FilterDropdown
             value={filters.country}
             onChange={(val) => handleChange("country", val)}
-            options={countryOptions}
+            options={COUNTRY_OPTIONS}
             allLabel="All Countries"
           />
         </div>
@@ -113,7 +103,7 @@ export default function StudentFilters({ onFilter, onClear, appliedFilters }) {
           <FilterDropdown
             value={filters.intake}
             onChange={(val) => handleChange("intake", val)}
-            options={intakeOptions}
+            options={INTAKE_OPTIONS}
             allLabel="All Intakes"
           />
         </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   getStudents,
   createStudent,
@@ -11,46 +11,13 @@ import {
 import StudentFilters from "../components/filters/StudentFilters";
 import StudentsTable from "../components/tables/StudentsTable";
 import StudentForm from "../components/forms/StudentForm";
+import FormModal from "../components/common/FormModal";
 import Toast from "../components/ui/Toast";
 import { CheckCircle2, Trash2 } from "lucide-react";
+import useListQuery from "../hooks/useListQuery";
+import { PAGE_SIZE, getErrorMessage } from "../config/crmConfig";
 
-// Rows shown per page in the Students list.
-const PAGE_SIZE = 25;
-
-// Applied list filters. These (plus the page number) are kept in the URL query string, e.g. /students?page=2&country=Canada&status=active
-const EMPTY_FILTERS = {
-  search: "",
-  country: "",
-  intake: "",
-  year: "",
-  status: "",
-  source_file: "",
-};
-const FILTER_KEYS = Object.keys(EMPTY_FILTERS);
-
-const getErrorMessage = (data, fallback) => {
-  if (!data) return fallback;
-
-  if (typeof data.detail === "string") {
-    return data.detail;
-  }
-
-  const firstKey = Object.keys(data)[0];
-
-  if (firstKey) {
-    const value = Array.isArray(data[firstKey])
-      ? data[firstKey][0]
-      : data[firstKey];
-
-    if (typeof value === "string") {
-      return firstKey === "non_field_errors"
-        ? value
-        : `${firstKey}: ${value}`;
-    }
-  }
-
-  return fallback;
-};
+const FILTER_KEYS = ["search", "country", "intake", "year", "status", "source_file"];
 
 export default function Students() {
   const navigate = useNavigate();
@@ -65,57 +32,9 @@ export default function Students() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // Page + applied filters live in the URL, so they survive opening a student and coming back, a refresh, and the browser Back button.
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const pageParam = parseInt(searchParams.get("page"), 10);
-  const page = pageParam > 0 ? pageParam : 1;
-
-  const search = searchParams.get("search") || "";
-  const country = searchParams.get("country") || "";
-  const intake = searchParams.get("intake") || "";
-  const status = searchParams.get("status") || "";
-  const source_file = searchParams.get("source_file") || "";
-  const yearParam = searchParams.get("year") || "";
-  // Years are numbers in the picker; "all" stays a string.
-  const year = /^\d+$/.test(yearParam) ? Number(yearParam) : yearParam;
-
-  // Only changes when a filter VALUE changes (not when just the page does), so paging does not clear the row selection.
-  const filters = useMemo(
-    () => ({ search, country, intake, year, status, source_file }),
-    [search, country, intake, year, status, source_file]
-  );
-
-  // Bumped on Apply / Clear so they still refetch even if the values are unchanged (same behaviour as before the URL was used).
-  const [reloadKey, setReloadKey] = useState(0);
-
-  // Write the page and filters to the URL. `replace` keeps history clean: paging/filtering does not add Back-button steps.
-  const updateListParams = (nextPage, nextFilters) => {
-    const params = new URLSearchParams();
-
-    if (nextPage > 1) {
-      params.set("page", String(nextPage));
-    }
-
-    FILTER_KEYS.forEach((key) => {
-      const value = nextFilters?.[key];
-
-      if (value !== null && value !== undefined && value !== "") {
-        params.set(key, String(value));
-      }
-    });
-
-    setSearchParams(params, { replace: true });
-  };
-
-  // Same call style as the old useState setter (value or updater function).
-  const setPage = (next) => {
-    const nextPage = typeof next === "function" ? next(page) : next;
-
-    if (nextPage !== page) {
-      updateListParams(nextPage, filters);
-    }
-  };
+  // Page + applied filters live in the URL (shared hook, same as Payments / Universities).
+  const { page, filters, reloadKey, setPage, writeParams, applyFilters, clearFilters } =
+    useListQuery(FILTER_KEYS, ["year"]);
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -134,69 +53,22 @@ export default function Students() {
   const [deletingStudent, setDeletingStudent] =
     useState(false);
 
-  // Build parameters for student list
-  const buildParams = (pageNumber, filtersData) => {
-    const params = {
-      page: pageNumber,
-      page_size: PAGE_SIZE,
-    };
-
-    if (filtersData.search) {
-      params.search = filtersData.search;
-    }
-
-    if (filtersData.country) {
-      params.country = filtersData.country;
-    }
-
-    if (filtersData.intake) {
-      params.intake = filtersData.intake;
-    }
-
-    if (filtersData.status) {
-      params.status = filtersData.status;
-    }
-
-    if (filtersData.source_file) {
-      params.source_file = filtersData.source_file;
-    }
-
-    if (filtersData.year && filtersData.year !== "all") {
-      params.year = filtersData.year;
-    }
-
-    return params;
-  };
-
-  // Build parameters without pagination
+  // Filters only (no pagination). "all" year means no year filter.
   const buildFilterOnlyParams = (filtersData) => {
     const params = {};
-
-    if (filtersData.search) {
-      params.search = filtersData.search;
-    }
-
-    if (filtersData.country) {
-      params.country = filtersData.country;
-    }
-
-    if (filtersData.intake) {
-      params.intake = filtersData.intake;
-    }
-
-    if (filtersData.status) {
-      params.status = filtersData.status;
-    }
-
-    if (filtersData.source_file) {
-      params.source_file = filtersData.source_file;
-    }
-    if (filtersData.year && filtersData.year !== "all") {
-      params.year = filtersData.year;
-    }
-
+    ["search", "country", "intake", "status", "source_file"].forEach((key) => {
+      if (filtersData[key]) params[key] = filtersData[key];
+    });
+    if (filtersData.year && filtersData.year !== "all") params.year = filtersData.year;
     return params;
   };
+
+  // Filters + pagination for the student list.
+  const buildParams = (pageNumber, filtersData) => ({
+    page: pageNumber,
+    page_size: PAGE_SIZE,
+    ...buildFilterOnlyParams(filtersData),
+  });
 
   // Fetch students
   const fetchStudents = async (
@@ -217,7 +89,7 @@ export default function Students() {
     } catch (error) {
       // The page in the URL no longer exists (edited URL, or the last row of the last page was deleted): fall back to page 1.
       if (error.response?.status === 404 && pageNumber > 1) {
-        updateListParams(1, filtersData);
+        writeParams(1, filtersData);
         return;
       }
 
@@ -240,16 +112,10 @@ export default function Students() {
   }, [filters, reloadKey]);
 
   // Handle filter apply (a new filter set always starts on page 1)
-  const handleFilter = (newFilters) => {
-    updateListParams(1, newFilters);
-    setReloadKey((key) => key + 1);
-  };
+  const handleFilter = (newFilters) => applyFilters(newFilters);
 
   // Handle reset filters
-  const handleReset = () => {
-    updateListParams(1, EMPTY_FILTERS);
-    setReloadKey((key) => key + 1);
-  };
+  const handleReset = () => clearFilters();
 
   // Add student modal
   const handleAdd = () => {
@@ -307,7 +173,8 @@ export default function Students() {
         type: "error",
         message: getErrorMessage(
           data,
-          "Failed to save student. Please check the form and try again."
+          "Failed to save student. Please check the form and try again.",
+          true
         ),
       });
 
@@ -675,51 +542,16 @@ export default function Students() {
 
       {/* Add / Edit Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-2 sm:p-4">
-
-          <div className="bg-white rounded-2xl shadow-card-hover w-full max-w-xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
-
-            {/* Modal Header */}
-            <div className="flex justify-between items-center gap-2 px-4 sm:px-5 py-3 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
-
-              <h2
-                className="text-base font-semibold text-slate-800"
-                style={{
-                  fontFamily:
-                    "'Sora', sans-serif",
-                }}
-              >
-                {selectedStudent
-                  ? "Edit Student"
-                  : "Add Student"}
-              </h2>
-
-              <button
-                onClick={() =>
-                  setShowForm(false)
-                }
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors duration-150 text-lg leading-none"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-3 sm:p-4">
-
-              <StudentForm
-                initialData={
-                  selectedStudent || {}
-                }
-                onSubmit={handleSave}
-                onCancel={() =>
-                  setShowForm(false)
-                }
-              />
-
-            </div>
-          </div>
-        </div>
+        <FormModal
+          title={selectedStudent ? "Edit Student" : "Add Student"}
+          onClose={() => setShowForm(false)}
+        >
+          <StudentForm
+            initialData={selectedStudent || {}}
+            onSubmit={handleSave}
+            onCancel={() => setShowForm(false)}
+          />
+        </FormModal>
       )}
 
       {/* Delete Confirmation Modal */}

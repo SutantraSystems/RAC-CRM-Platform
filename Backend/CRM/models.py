@@ -4,6 +4,18 @@ from CRM.deduplication import DUPLICATE_CHECK_FIELDS, build_dedup_hash
 from datetime import timedelta
 from django.utils import timezone
 
+INTAKE_FALL = "fall"
+INTAKE_SPRING = "spring"
+INTAKE_WINTER = "winter"
+INTAKE_NOT_SURE = "not_sure"
+
+INTAKE_CHOICES = [
+    (INTAKE_FALL, "Fall"),
+    (INTAKE_SPRING, "Spring"),
+    (INTAKE_WINTER, "Winter"),
+    (INTAKE_NOT_SURE, "Not Sure"),
+]
+
 class RACStudent(models.Model):
 
     full_name = models.CharField(
@@ -23,6 +35,12 @@ class RACStudent(models.Model):
         null=True,
         blank=True,
     )
+    alternate_mobile_number = models.CharField(
+    max_length=500,
+    null=True,
+    blank=True,
+    db_index=True,
+)
 
     email = models.EmailField(
         db_index=True,
@@ -54,17 +72,12 @@ class RACStudent(models.Model):
         blank=True,
         db_index=True,
     )
-    INTAKE_FALL = "fall"
-    INTAKE_WINTER = "winter"
-    INTAKE_SPRING = "spring"
-    INTAKE_NOT_SURE = "not_sure"
-
-    INTAKE_CHOICES = [
-        (INTAKE_FALL, "Fall"),
-        (INTAKE_WINTER, "Winter"),
-        (INTAKE_SPRING, "Spring"),
-        (INTAKE_NOT_SURE, "Not Sure"),
-    ]
+    
+    INTAKE_FALL = INTAKE_FALL
+    INTAKE_WINTER = INTAKE_WINTER
+    INTAKE_SPRING = INTAKE_SPRING
+    INTAKE_NOT_SURE = INTAKE_NOT_SURE
+    INTAKE_CHOICES = INTAKE_CHOICES
 
     intake = models.CharField(
         max_length=20,
@@ -328,3 +341,165 @@ class StudentReminder(models.Model):
         if now - self.remind_at <= self.due_window():
             return self.STATUS_DUE
         return self.STATUS_OVERDUE
+
+def default_year():
+    return timezone.now().year
+
+
+class University(models.Model):
+
+    name = models.CharField(max_length=255, db_index=True)
+
+    phone_number = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    email = models.EmailField(
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    organisation_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    designation = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
+    created_by = models.EmailField(
+        null=True,
+        blank=True,
+        help_text="Email of the logged-in user who added this record.",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "rac_universities"
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return self.name
+
+
+class Payment(models.Model):
+
+    INTAKE_FALL = INTAKE_FALL
+    INTAKE_WINTER = INTAKE_WINTER
+    INTAKE_SPRING = INTAKE_SPRING
+    INTAKE_NOT_SURE = INTAKE_NOT_SURE
+    INTAKE_CHOICES = INTAKE_CHOICES
+
+    PAYMENT_DUE = "due"
+    PAYMENT_ON_DATE = "on_date"
+
+    PAYMENT_TYPE_CHOICES = [
+        (PAYMENT_DUE, "Due"),
+        (PAYMENT_ON_DATE, "On Date"),
+    ]
+
+    STATUS_DONE = "payment_done"
+    STATUS_PENDING = "payment_pending"
+    STATUS_HALF = "half_payment_done"
+
+    STATUS_CHOICES = [
+        (STATUS_DONE, "Payment Done"),
+        (STATUS_PENDING, "Payment Pending"),
+        (STATUS_HALF, "Half Payment Done"),
+    ]
+
+    CATEGORY_CHOICES = [
+        ("university_payment", "University Payment"),
+        ("prm", "PRM"),
+        ("flywire", "Flywire"),
+        ("el", "EL"),
+        ("accommodation", "Accommodation"),
+        ("test_prep", "Test Prep"),
+    ]
+
+    student_name = models.CharField(max_length=255, db_index=True)
+
+    intake = models.CharField(
+        max_length=20,
+        choices=INTAKE_CHOICES,
+        default=INTAKE_NOT_SURE,
+        null=True,
+        blank=True,
+    )
+
+    year = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        default=default_year,
+    )
+
+    university = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    organization = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    payment_type = models.CharField(
+        max_length=20,
+        choices=PAYMENT_TYPE_CHOICES,
+        default=PAYMENT_DUE,
+        null=True,
+        blank=True,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        db_index=True,
+    )
+
+    category = models.CharField(
+        max_length=30,
+        choices=CATEGORY_CHOICES,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    created_by = models.EmailField(
+        null=True,
+        blank=True,
+        help_text="Email of the logged-in user who added this record.",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "rac_payments"
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"Payment - {self.student_name}"

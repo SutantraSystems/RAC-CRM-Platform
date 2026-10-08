@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from accounts.utils import get_short_name
-from .deduplication import DUPLICATE_CHECK_FIELDS, ContactIndex, build_dedup_hash
-from .models import RACStudent,StudentComment,StudentDocument,StudentReminder
+from .deduplication import (
+    DUPLICATE_CHECK_FIELDS, ContactIndex, build_dedup_hash, parse_mobile_numbers,
+    split_mobile_numbers, describe_mobile_conflict, describe_repeated_mobile,
+)
+from .models import RACStudent,StudentComment,StudentDocument,StudentReminder,University,Payment
 from django.utils import timezone
 
 class RACStudentSerializer(serializers.ModelSerializer):
@@ -15,15 +18,35 @@ class RACStudentSerializer(serializers.ModelSerializer):
                 field: {"required": False, "allow_null": True}
                 for field in DUPLICATE_CHECK_FIELDS
             },
-            # A blank status is accepted and saved as "not_sure" (see validate()).
+
             "status": {"required": False, "allow_null": True, "allow_blank": True},
+          
+            "mobile_number": {"required": False, "allow_null": True, "max_length": None},
         }
 
     def validate(self, attrs):
 
-        # No status chosen means Not Sure.
         if "status" in attrs and not attrs["status"]:
             attrs["status"] = RACStudent.STATUS_NOT_SURE
+
+        if "mobile_number" in attrs or "alternate_mobile_number" in attrs:
+            mobile_raw = (
+                attrs["mobile_number"] if "mobile_number" in attrs
+                else getattr(self.instance, "mobile_number", None)
+            )
+            alternate_raw = (
+                attrs["alternate_mobile_number"] if "alternate_mobile_number" in attrs
+                else getattr(self.instance, "alternate_mobile_number", None)
+            )
+            mobile, alternate, mobile_errors, repeated = parse_mobile_numbers(mobile_raw, alternate_raw)
+            for field, number in repeated:
+                mobile_errors[field] = (
+                    mobile_errors.get(field, "") + f" {describe_repeated_mobile(number)}."
+                ).strip()
+            if mobile_errors:
+                raise serializers.ValidationError(mobile_errors)
+            attrs["mobile_number"] = mobile
+            attrs["alternate_mobile_number"] = alternate
 
         data = {}
         for field in DUPLICATE_CHECK_FIELDS:
@@ -54,8 +77,21 @@ class RACStudentSerializer(serializers.ModelSerializer):
         errors = {}
         if index.email_exists(data.get("email")):
             errors["email"] = "A student with this email already exists."
-        if index.mobile_exists(data.get("mobile_number")):
-            errors["mobile_number"] = "A student with this mobile number already exists."
+
+        # Every number (primary and alternate) must be unique across ALL students primary and alternate numbers.
+        alternate_value = (
+            attrs["alternate_mobile_number"] if "alternate_mobile_number" in attrs
+            else getattr(self.instance, "alternate_mobile_number", None)
+        )
+        for field, numbers in (
+            ("mobile_number", split_mobile_numbers(data.get("mobile_number"))),
+            ("alternate_mobile_number", split_mobile_numbers(alternate_value)),
+        ):
+            conflicts = index.mobile_conflicts(numbers)
+            if conflicts:
+                errors[field] = " ".join(
+                    f"{describe_mobile_conflict(number, owner)}." for number, owner in conflicts
+                )
         if errors:
             raise serializers.ValidationError(errors)
 
@@ -175,3 +211,51 @@ class RescheduleSerializer(serializers.Serializer):
         if value <= timezone.now():
             raise serializers.ValidationError(FUTURE_MESSAGE)
         return value
+
+class UniversitySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = University
+        fields = "__all__"
+        read_only_fields = ["id", "created_by", "created_at", "updated_at"]
+        extra_kwargs = {
+            "name": {
+                "error_messages": {
+                    "required": "Name is required.",
+                    "blank": "Name is required.",
+                    "null": "Name is required.",
+                }
+            }
+        }
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Payment
+        fields = "__all__"
+        read_only_fields = ["id", "created_by", "created_at", "updated_at"]
+        extra_kwargs = {
+            "student_name": {
+                "error_messages": {
+                    "required": "Student Name is required.",
+                    "blank": "Student Name is required.",
+                    "null": "Student Name is required.",
+                }
+            },
+            # A blank status / intake is accepted and saved with its default.
+            "status": {"required": False, "allow_null": True, "allow_blank": True},
+            "intake": {"required": False, "allow_null": True, "allow_blank": True},
+        }
+
+    def validate_amount(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError("Amount cannot be negative.")
+        return value
+
+    def validate(self, attrs):
+        if "status" in attrs and not attrs["status"]:
+            attrs["status"] = Payment.STATUS_PENDING
+        if "intake" in attrs and not attrs["intake"]:
+            attrs["intake"] = Payment.INTAKE_NOT_SURE
+        return attrs

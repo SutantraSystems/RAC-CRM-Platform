@@ -6,22 +6,26 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import RegisterSerializer,ResetPasswordSerializer,UpdateProfileSerializer
 from .utils import get_short_name,get_display_name
+from .session_timeout import seconds_remaining
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import SAFE_METHODS
 
-
-def user_payload(user):
+def user_payload(user, request=None):
     """Safe, frontend-facing description of a user (never contains secrets)."""
-    return {
+    payload = {
         "id": user.id,
         "email": user.email,
         "username": user.username,
         "full_name": user.first_name,
         "short_name": get_display_name(user),
     }
+    if request is not None:
+        # Seconds until the fixed login timeout.
+        payload["session_expires_in"] = seconds_remaining(request)
+    return payload
 
 
 def resolve_login_username(identifier):
@@ -102,7 +106,7 @@ class LoginView(APIView):
         login(request, user)
         return Response({
             "message": "Login successful.",
-            "user": user_payload(user),
+            "user": user_payload(user,request),
         })
 
 @method_decorator(never_cache, name="dispatch")
@@ -111,7 +115,7 @@ class LogoutView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        logout(request)  # flushes the server-side session row + cookie
+        logout(request)  
         return Response({
             "message": "Logout successful."
         })
@@ -125,7 +129,7 @@ class MeView(APIView):
         return [IsAuthenticated()]
 
     def _user_payload(self, user):
-        return user_payload(user)
+        return user_payload(user, self.request)    
 
     def get(self, request):
         if not request.user.is_authenticated:

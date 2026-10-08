@@ -34,6 +34,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'accounts.session_timeout.FixedSessionTimeoutMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -123,16 +124,20 @@ CORS_ALLOW_CREDENTIALS = True
 # The session id lives in an HttpOnly cookie, so JavaScript can never read it.
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", str(60 * 60 * 24 )))
+
+# Fixed login timeout: 
+AUTH_ABSOLUTE_TIMEOUT_SECONDS = int(os.getenv("AUTH_ABSOLUTE_TIMEOUT_SECONDS", str(60 * 60 * 24)))
+
+# Server-side backstop only; the middleware above is what enforces the exact deadline.
+SESSION_COOKIE_AGE = AUTH_ABSOLUTE_TIMEOUT_SECONDS
 
 # Make the session cookie a browser-session cookie: the browser deletes it when it is fully closed, so the user has to log in again.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = (os.getenv("SESSION_EXPIRE_AT_BROWSER_CLOSE", "true").lower() == "true")
 
-# The CSRF cookie must stay readable by JS: axios copies it into the X-CSRFToken header on POST/PUT/PATCH/DELETE. It is not a credential.
-CSRF_COOKIE_HTTPONLY = False
+# The CSRF cookie must stay readable by JS: 
 CSRF_COOKIE_SAMESITE = "Lax"
 
-# Secure (HTTPS-only) cookies by default whenever DEBUG is off. Override in .env only if a deployment is genuinely served over plain HTTP.
+# Secure (HTTPS-only) cookies by default whenever DEBUG is off. 
 _SECURE_COOKIES_DEFAULT = "false" if DEBUG else "true"
 SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", _SECURE_COOKIES_DEFAULT).lower() == "true"
 CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", _SECURE_COOKIES_DEFAULT).lower() == "true"

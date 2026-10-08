@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Check } from "lucide-react";
 
-export default function YearFilterCalendar({ value, onChange, className = "" }) {
+export default function YearFilterCalendar({ value, onChange, className = "", showAll = true, variant = "default" }) {
     const [open, setOpen] = useState(false);
     const [rangeStart, setRangeStart] = useState(2026);
     const wrapperRef = useRef(null);
+    const isForm = variant === "form";
 
     useEffect(() => {
         const handleOutsideClick = (e) => {
@@ -39,11 +40,11 @@ export default function YearFilterCalendar({ value, onChange, className = "" }) 
             <button
                 type="button"
                 onClick={() => setOpen((prev) => !prev)}
-                className="input-field w-full flex items-center justify-between gap-2"
+                className={`${isForm ? "form-control" : "input-field"} w-full flex items-center justify-between gap-2`}
             >
                 <span className="flex items-center gap-2 min-w-0">
-                    <Calendar size={14} className="text-slate-400 shrink-0" />
-                    <span className={`truncate ${value ? "text-slate-700" : "text-slate-400"}`}>
+                    <Calendar size={isForm ? 16 : 14} className={`${isForm ? "text-slate-500" : "text-slate-400"} shrink-0`} />
+                    <span className={`truncate ${value ? (isForm ? "text-slate-900" : "text-slate-700") : (isForm ? "text-slate-500/80" : "text-slate-400")}`}>
                         {displayLabel()}
                     </span>
                 </span>
@@ -51,7 +52,9 @@ export default function YearFilterCalendar({ value, onChange, className = "" }) 
 
             {open && (
                 <div className="absolute left-0 z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-card-hover p-3">
-                    {/* All Years */}
+                    {/* All Years (hidden in forms with showAll={false}) */}
+                    {showAll && (
+                    <>
                     <button
                         type="button"
                         onClick={() => handleSelect("all")}
@@ -63,8 +66,10 @@ export default function YearFilterCalendar({ value, onChange, className = "" }) 
                         All Years
                         {value === "all" && <Check size={14} />}
                     </button>
+                    </>
+                    )}
 
-                    <div className="border-t border-slate-100 pt-2">
+                    <div className={showAll ? "border-t border-slate-100 pt-2" : ""}>
                         {/* Decade navigation */}
                         <div className="flex items-center justify-between mb-2">
                             <button

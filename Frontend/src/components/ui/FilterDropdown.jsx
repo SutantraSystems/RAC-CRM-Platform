@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
 
-// Menu shows 4 options (plus the "All" row when present), the rest scrolls
-const VISIBLE_OPTIONS = 4;
+// Menu always shows 5 rows at once ("All" row + 4 options, or 5 options when
+// there is no "All" row). Anything beyond that scrolls.
+const VISIBLE_ROWS = 5;
 const ROW_REM = 2.25;
 
 export default function FilterDropdown({
@@ -14,13 +15,15 @@ export default function FilterDropdown({
   buttonClassName = "",
   showAllOption = true, 
   fixedMenu = false,
+  variant = "default", // "form" matches the modal form controls
 }) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState(null);
-  const visibleRows =
-    Math.min(options.length, VISIBLE_OPTIONS) + (showAllOption ? 1 : 0);
+  const totalRows = options.length + (showAllOption ? 1 : 0);
+  const visibleRows = Math.min(totalRows, VISIBLE_ROWS);
   const menuMaxHeight = `${visibleRows * ROW_REM + 0.625}rem`;
   const wrapperRef = useRef(null);
+  const isForm = variant === "form";
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -68,12 +71,12 @@ export default function FilterDropdown({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`input-field w-full flex items-center justify-between gap-2 ${buttonClassName}`}
+        className={`${isForm ? "form-control" : "input-field"} w-full flex items-center justify-between gap-2 ${buttonClassName}`}
       >
-        <span className={`min-w-0 truncate text-left ${value ? "text-slate-700" : "text-slate-400"}`}>
+        <span className={`min-w-0 truncate text-left ${value ? (isForm ? "text-slate-900" : "text-slate-700") : (isForm ? "text-slate-500/80" : "text-slate-400")}`}>
           {displayLabel}
         </span>
-        <ChevronDown size={14} className="text-slate-400 shrink-0" />
+        <ChevronDown size={isForm ? 18 : 14} className={`${isForm ? "text-slate-500" : "text-slate-400"} shrink-0 transition-transform duration-200 ${isForm && open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (!fixedMenu || menuPos) && (

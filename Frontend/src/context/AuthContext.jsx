@@ -111,6 +111,17 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => startTabHeartbeat(), []);
 
     useEffect(() => {
+        const secondsLeft = user?.session_expires_in;
+
+        if (typeof secondsLeft !== "number") {
+            return undefined;
+        }
+
+        const timer = setTimeout(handleSessionExpired, Math.max(0, secondsLeft) * 1000);
+        return () => clearTimeout(timer);
+    }, [user, handleSessionExpired]);
+
+    useEffect(() => {
         const recheck = () => {
             if (userRef.current) {
                 checkAuth({ silent: true });

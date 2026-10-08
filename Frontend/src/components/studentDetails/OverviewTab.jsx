@@ -49,6 +49,7 @@ const FIELD_ICONS = {
   "Full Name": User,
   "Date of Birth": CalendarDays,
   "Mobile Number": Phone,
+  "Alternate Mobile Number": Phone,
   Email: Mail,
   "Passport Number": Contact,
   Address: MapPin,
@@ -206,6 +207,11 @@ export default function OverviewTab({
           <InfoRow
             label="Mobile Number"
             value={student.mobile_number}
+          />
+
+          <InfoRow
+            label="Alternate Mobile Number"
+            value={student.alternate_mobile_number}
           />
 
           <InfoRow

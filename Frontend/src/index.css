@@ -61,6 +61,19 @@
   .input-field:focus {
     @apply outline-none ring-2 ring-primary-200 border-primary-400;
   }
+  /* Shared control style for Add/Edit modal forms (inputs, textareas, dropdowns). */
+  .form-control {
+    @apply w-full min-h-[2.75rem] rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm leading-6 text-slate-900 shadow-sm transition-all duration-150 placeholder:text-[13px] placeholder:text-slate-500/80 hover:border-slate-400;
+  }
+  input.form-control {
+    height: 3.125rem;
+  }
+  .form-control:focus {
+    @apply outline-none border-primary-500 ring-4 ring-primary-100;
+  }
+  .form-control:disabled {
+    @apply cursor-not-allowed bg-slate-50 text-slate-400;
+  }
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
   }
