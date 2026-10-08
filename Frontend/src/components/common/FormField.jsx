@@ -201,7 +201,7 @@ export const FormProgress = ({ sections, onSelect }) => {
 
 // Cancel + Save. Stays visible at the bottom of the modal while the form scrolls.
 export const FormFooter = ({ onCancel, saving, submitLabel }) => (
-  <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:flex-row sm:justify-end sm:px-6">
+  <div className="sticky bottom-0 z-10 -mx-4 !mt-auto flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:flex-row sm:justify-end sm:px-6">
     <button
       type="button"
       onClick={onCancel}
