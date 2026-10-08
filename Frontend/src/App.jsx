@@ -16,22 +16,18 @@ import { useAuth } from "./context/AuthContext";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import StudentDetails from "./pages/StudentDetails";
-// future integration
-// '/applications': 'Applications',
-// '/universities': 'Universities',
-// '/finance': 'Finance & Revenue',
-// '/reports': 'Analytics & Reports',
-// '/settings': 'Settings',
-// '/learning': 'Learning Resources',
-// '/search-program': 'Search Program',
-// '/prm': 'Partner Management',
-// '/allied': 'Allied Services',
-// '/test-prep': 'Test Preparation',
+import Universities from "./pages/Universities";
+import UniversityDetails from "./pages/UniversityDetails";
+import Payments from "./pages/Payments";
+import PaymentDetails from "./pages/PaymentDetails";
+
 
 const pageTitles = {
   "/dashboard": "Dashboard",
   "/students": "Students",
   "/importstudents": "Import Students",
+  "/universities": "Universities",
+  "/payments": "Payments",
   "/profile": "My Profile",
 
 };
@@ -63,7 +59,10 @@ const CRMLayout = ({ children }) => {
 
   const location = useLocation();
   const pageTitle = pageTitles[location.pathname] ||
-    (location.pathname.startsWith("/students/") ? "Student Details" : "Dashboard");
+    (location.pathname.startsWith("/students/") ? "Student Details"
+      : location.pathname.startsWith("/universities/") ? "University Details"
+        : location.pathname.startsWith("/payments/") ? "Payment Details"
+          : "Dashboard");
 
   const contentMargin = isMobile
     ? "ml-0"
@@ -93,6 +92,13 @@ const CRMLayout = ({ children }) => {
     </div>
   );
 };
+
+// Auth guard + sidebar/navbar layout, written once for every protected page.
+const ProtectedPage = ({ children }) => (
+  <ProtectedRoute>
+    <CRMLayout>{children}</CRMLayout>
+  </ProtectedRoute>
+);
 
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -135,57 +141,15 @@ const App = () => {
         />
 
         {/* PROTECTED CRM ROUTES */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <CRMLayout>
-                <Dashboard />
-              </CRMLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/students"
-          element={
-            <ProtectedRoute>
-              <CRMLayout>
-                <Students />
-              </CRMLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/importstudents"
-          element={
-            <ProtectedRoute>
-              <CRMLayout>
-                <ImportStudents />
-              </CRMLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <CRMLayout>
-                <Profile />
-              </CRMLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/students/:id"
-          element={
-            <ProtectedRoute>
-              <CRMLayout>
-                <StudentDetails />
-              </CRMLayout>
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/dashboard" element={<ProtectedPage><Dashboard /></ProtectedPage>} />
+        <Route path="/students" element={<ProtectedPage><Students /></ProtectedPage>} />
+        <Route path="/importstudents" element={<ProtectedPage><ImportStudents /></ProtectedPage>} />
+        <Route path="/profile" element={<ProtectedPage><Profile /></ProtectedPage>} />
+        <Route path="/students/:id" element={<ProtectedPage><StudentDetails /></ProtectedPage>} />
+        <Route path="/universities" element={<ProtectedPage><Universities /></ProtectedPage>} />
+        <Route path="/universities/:id" element={<ProtectedPage><UniversityDetails /></ProtectedPage>} />
+        <Route path="/payments" element={<ProtectedPage><Payments /></ProtectedPage>} />
+        <Route path="/payments/:id" element={<ProtectedPage><PaymentDetails /></ProtectedPage>} />
 
         {/* CATCH-ALL (unknown routes) */}
         <Route

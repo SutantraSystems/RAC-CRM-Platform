@@ -1,24 +1,68 @@
 import React, { useState, useEffect } from "react";
+import {
+  User,
+  CalendarDays,
+  Phone,
+  PhoneCall,
+  Mail,
+  FileText,
+  Users,
+  MapPin,
+  GraduationCap,
+  Briefcase,
+  Award,
+} from "lucide-react";
 import YearPicker from "../ui/YearPicker";
 import FilterDropdown from "../ui/FilterDropdown";
-import { countryList, STATUS_OPTIONS } from "../../data/students";
+import {
+  COUNTRY_OPTIONS,
+  STATUS_OPTIONS,
+  INTAKE_OPTIONS,
+  CURRENCY_SYMBOL,
+} from "../../config/crmConfig";
+import FormField, {
+  TextInput,
+  OptionPills,
+  FormSection,
+  FormProgress,
+  FormFooter,
+  LABEL_CLASS,
+  isFilled,
+} from "../common/FormField";
 import { getStudentSourceFiles } from "../../services/studentApi";
 
-const countryOptions = countryList.map((c) => ({ value: c, label: c }));
-
-const intakeOptions = [
-  { value: "fall", label: "Fall" },
-  { value: "winter", label: "Winter" },
-  { value: "spring", label: "Spring" },
-  { value: "not_sure", label: "Not Sure" },
+const SECTIONS = [
+  {
+    id: "personal",
+    title: "Personal Details",
+    fields: [
+      "full_name", "dob", "mobile_number", "alternate_mobile_number",
+      "email", "passport_number", "parent_name", "address",
+    ],
+    counted: [
+      "full_name", "dob", "mobile_number", "alternate_mobile_number",
+      "email", "passport_number", "parent_name", "address",
+    ],
+  },
+  {
+    id: "study",
+    title: "Education & Study Plan",
+    fields: [
+      "preferred_country", "year", "intake", "budget",
+      "test_score", "academic_details", "work_experience",
+    ],
+    counted: [
+      "preferred_country", "intake", "budget",
+      "test_score", "academic_details", "work_experience",
+    ],
+  },
+  {
+    id: "lead",
+    title: "Lead Details",
+    fields: ["status", "source_file"],
+    counted: ["source_file"],
+  },
 ];
-
-const Field = ({ label, children }) => (
-  <div className="flex flex-col gap-1 min-w-0">
-    <label className="text-xs font-medium text-slate-500">{label}</label>
-    {children}
-  </div>
-);
 
 export default function StudentForm({
   initialData = {},
@@ -30,6 +74,7 @@ export default function StudentForm({
     full_name: initialData.full_name || "",
     dob: initialData.dob || "",
     mobile_number: initialData.mobile_number || "",
+    alternate_mobile_number: initialData.alternate_mobile_number || "",
     email: initialData.email || "",
     passport_number: initialData.passport_number || "",
     academic_details: initialData.academic_details || "",
@@ -47,8 +92,8 @@ export default function StudentForm({
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [sourceOptions, setSourceOptions] = useState([]);
-  // "Others" lets the user type a source file name that is not in the list.
   const [useOther, setUseOther] = useState(false);
+  const [openIds, setOpenIds] = useState(["personal"]);
 
   useEffect(() => {
     getStudentSourceFiles()
@@ -66,6 +111,19 @@ export default function StudentForm({
     { value: OTHERS_VALUE, label: "Others" },
   ];
 
+  const clearError = (key) => {
+    if (fieldErrors[key]) {
+      setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    }
+  };
+
+  const handleFieldChange = (key, value) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    clearError(key);
+  };
+
+  const handleChange = (e) => handleFieldChange(e.target.name, e.target.value);
+
   const handleSourceSelect = (val) => {
     if (val === OTHERS_VALUE) {
       setUseOther(true);
@@ -76,22 +134,13 @@ export default function StudentForm({
     }
   };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    if (fieldErrors[e.target.name]) {
-      setFieldErrors((prev) => ({ ...prev, [e.target.name]: undefined }));
-    }
-  };
+  const openSection = (id) =>
+    setOpenIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
 
-  const handleFieldChange = (key, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
+  const toggleSection = (id) =>
+    setOpenIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -124,227 +173,307 @@ export default function StudentForm({
     const errors = await onSubmit(payload);
     setSaving(false);
     setFieldErrors(errors || {});
+
+    // Open the first section that contains a rejected field.
+    const firstBad = SECTIONS.find((s) => s.fields.some((f) => errors?.[f]));
+    if (firstBad) openSection(firstBad.id);
   };
 
+  // Progress per section, drawn as the segmented bar at the top.
+  const progress = SECTIONS.map((section) => ({
+    filled: section.counted.filter((key) => isFilled(formData[key])).length,
+    total: section.counted.length,
+    hasError: section.fields.some((key) => fieldErrors[key]),
+  }));
+
+  // Server errors that do not belong to any field (shown above the buttons).
+  const knownFields = SECTIONS.flatMap((s) => s.fields);
+  const generalErrors = Object.entries(fieldErrors).filter(
+    ([key, message]) => message && !knownFields.includes(key)
+  );
+
+  const isEdit = Boolean(initialData?.id);
+
   return (
-    // The modal, header and close button are provided by the parent (Students.jsx).
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* ROW 1 */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2">
-            <Field label="Full Name">
-              <input
-                name="full_name"
-                placeholder="e.g. John Mathew"
-                value={formData.full_name}
-                onChange={handleChange}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </Field>
+      <FormProgress
+        sections={SECTIONS.map((section, i) => ({ id: section.id, title: section.title, ...progress[i] }))}
+        onSelect={openSection}
+      />
 
-            <Field label="Date of Birth">
-              <input
-                type="date"
-                name="dob"
-                value={formData.dob}
-                onChange={handleChange}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-              />
-            </Field>
+      {/* 1 — PERSONAL DETAILS */}
+      <FormSection
+        id={SECTIONS[0].id}
+        title={SECTIONS[0].title}
+        index={0}
+        open={openIds.includes("personal")}
+        onToggle={() => toggleSection("personal")}
+        {...progress[0]}
+      >
+        <FormField label="Full Name" htmlFor="full_name" error={fieldErrors.full_name}>
+          <TextInput
+            id="full_name"
+            name="full_name"
+            icon={<User size={16} />}
+            placeholder="e.g. John Mathew"
+            value={formData.full_name}
+            onChange={handleChange}
+            error={fieldErrors.full_name}
+          />
+        </FormField>
 
-            <Field label="Mobile Number">
-              <input
-                name="mobile_number"
-                placeholder="e.g. 9876543210"
-                value={formData.mobile_number}
-                onChange={handleChange}
-                className={`px-3 py-2 text-sm border rounded-lg ${fieldErrors.mobile_number ? "border-red-400" : "border-slate-200"}`}
-              />
-              {fieldErrors.mobile_number && (
-                <p className="text-xs text-red-500">{fieldErrors.mobile_number}</p>
-              )}
-            </Field>
-          </div>
+        <FormField label="Date of Birth" htmlFor="dob" error={fieldErrors.dob}>
+          <TextInput
+            id="dob"
+            type="date"
+            name="dob"
+            icon={<CalendarDays size={16} />}
+            value={formData.dob}
+            onChange={handleChange}
+            error={fieldErrors.dob}
+          />
+        </FormField>
 
-          {/* ROW 2 */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2">
-            <Field label="Email">
-              <input
-                type="email"
-                name="email"
-                placeholder="e.g. john@email.com"
-                value={formData.email}
-                onChange={handleChange}
-                className={`px-3 py-2 text-sm border rounded-lg ${fieldErrors.email ? "border-red-400" : "border-slate-200"}`}
-              />
-              {fieldErrors.email && (
-                <p className="text-xs text-red-500">{fieldErrors.email}</p>
-              )}
-            </Field>
+        <FormField
+          label="Mobile Number"
+          htmlFor="mobile_number"
+          error={fieldErrors.mobile_number}
+          hint="More than one number? Separate them with a comma. Extra numbers are saved as alternate numbers."
+        >
+          <TextInput
+            id="mobile_number"
+            name="mobile_number"
+            inputMode="tel"
+            icon={<Phone size={16} />}
+            placeholder="e.g. 9876543210"
+            value={formData.mobile_number}
+            onChange={handleChange}
+            error={fieldErrors.mobile_number}
+          />
+        </FormField>
 
-            <Field label="Passport Number">
-              <input
-                name="passport_number"
-                placeholder="e.g. P1234567"
-                value={formData.passport_number}
-                onChange={handleChange}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-              />
-            </Field>
+        <FormField
+          label="Alternate Mobile Number"
+          htmlFor="alternate_mobile_number"
+          error={fieldErrors.alternate_mobile_number}
+          hint="Optional. Separate several numbers with commas."
+        >
+          <TextInput
+            id="alternate_mobile_number"
+            name="alternate_mobile_number"
+            inputMode="tel"
+            icon={<PhoneCall size={16} />}
+            placeholder="e.g. 9123456789"
+            value={formData.alternate_mobile_number}
+            onChange={handleChange}
+            error={fieldErrors.alternate_mobile_number}
+          />
+        </FormField>
 
-            <Field label="Preferred Country">
-              <FilterDropdown
-                value={formData.preferred_country}
-                onChange={(val) => handleFieldChange("preferred_country", val)}
-                options={countryOptions}
-                allLabel="Select Country"
-              />
-            </Field>
-          </div>
+        <FormField label="Email Address" htmlFor="email" error={fieldErrors.email}>
+          <TextInput
+            id="email"
+            type="email"
+            name="email"
+            icon={<Mail size={16} />}
+            placeholder="e.g. john@email.com"
+            value={formData.email}
+            onChange={handleChange}
+            error={fieldErrors.email}
+          />
+        </FormField>
 
-          {/* ROW 3 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
-            <Field label="Test Score">
-              <input
-                type="number"
-                name="test_score"
-                placeholder="e.g. 7.5"
-                value={formData.test_score}
-                onChange={handleChange}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-              />
-            </Field>
+        <FormField label="Passport Number" htmlFor="passport_number" error={fieldErrors.passport_number}>
+          <TextInput
+            id="passport_number"
+            name="passport_number"
+            icon={<FileText size={16} />}
+            placeholder="e.g. P1234567"
+            value={formData.passport_number}
+            onChange={handleChange}
+            error={fieldErrors.passport_number}
+          />
+        </FormField>
 
-            <Field label="Budget">
-              <input
-                type="number"
-                name="budget"
-                placeholder="e.g. 500000"
-                value={formData.budget}
-                onChange={handleChange}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-              />
-            </Field>
-          </div>
+        <FormField label="Parent Name" htmlFor="parent_name" error={fieldErrors.parent_name} className="sm:col-span-2">
+          <TextInput
+            id="parent_name"
+            name="parent_name"
+            icon={<Users size={16} />}
+            placeholder="e.g. Mary Mathew"
+            value={formData.parent_name}
+            onChange={handleChange}
+            error={fieldErrors.parent_name}
+          />
+        </FormField>
 
-          {/* ROW 3b — Intake & Year */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
-            <Field label="Intake">
-              <FilterDropdown
-                value={formData.intake}
-                onChange={(val) => handleFieldChange("intake", val)}
-                options={intakeOptions}
-                allLabel="Select Intake"
-              />
-            </Field>
-
-            <Field label="Intake Year">
-              <YearPicker
-                value={formData.year}
-                onChange={(year) => handleFieldChange("year", year)}
-              />
-            </Field>
-          </div>
-
-          {/* ROW 3c — Status & Source File */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
-            <Field label="Status">
-              <FilterDropdown
-                value={formData.status}
-                onChange={(val) => handleFieldChange("status", val)}
-                options={STATUS_OPTIONS}
-                showAllOption={false}
-              />
-            </Field>
-
-            <Field label="Source File">
-              <FilterDropdown
-                value={useOther ? OTHERS_VALUE : formData.source_file}
-                onChange={handleSourceSelect}
-                options={dropdownOptions}
-                allLabel="Select Source File"
-              />
-            </Field>
-          </div>
-
-          {useOther && (
-            <Field label="Other Source">
-              <input
-                name="source_file"
-                placeholder="Enter source file name"
-                value={formData.source_file}
-                onChange={handleChange}
-                autoFocus
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </Field>
-          )}
-
-          {/* ROW 4 */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2">
-            <Field label="Parent Name">
-              <input
-                name="parent_name"
-                placeholder="e.g. Mary Mathew"
-                value={formData.parent_name}
-                onChange={handleChange}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-              />
-            </Field>
-
-            <Field label="Academic Details">
-              <input
-                name="academic_details"
-                placeholder="e.g. B.Sc Computer Science"
-                value={formData.academic_details}
-                onChange={handleChange}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-              />
-            </Field>
-
-            <Field label="Work Experience">
-              <input
-                name="work_experience"
-                placeholder="e.g. 2 years"
-                value={formData.work_experience}
-                onChange={handleChange}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg"
-              />
-            </Field>
-          </div>
-
-          {/* ADDRESS */}
-          <Field label="Address">
+        <FormField label="Address" htmlFor="address" error={fieldErrors.address} className="sm:col-span-2">
+          <div className="relative">
+            <MapPin size={16} className="pointer-events-none absolute left-4 top-4 text-slate-500" />
             <textarea
+              id="address"
               name="address"
-              placeholder="Full address"
+              rows={3}
+              placeholder="House name, street, city, state, PIN"
               value={formData.address}
               onChange={handleChange}
-              rows={3}
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg resize-none"
+              className="form-control resize-none pl-11"
             />
-          </Field>
-
-          {/* BUTTONS */}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-3 border-t border-slate-200">
-
-            <button
-              type="button"
-              onClick={onCancel}
-              className="w-full sm:w-auto px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full sm:w-auto px-4 py-2 text-sm btn-primary text-white rounded-lg hover:btn-primary-hover disabled:opacity-60"
-            >
-              {saving ? "Saving..." : "Save Student"}
-            </button>
-
           </div>
+        </FormField>
+      </FormSection>
+
+      {/* 2 — EDUCATION & STUDY PLAN */}
+      <FormSection
+        id={SECTIONS[1].id}
+        title={SECTIONS[1].title}
+        index={1}
+        open={openIds.includes("study")}
+        onToggle={() => toggleSection("study")}
+        {...progress[1]}
+      >
+        <FormField label="Preferred Country" error={fieldErrors.preferred_country}>
+          <FilterDropdown
+            value={formData.preferred_country}
+            onChange={(val) => handleFieldChange("preferred_country", val)}
+            options={COUNTRY_OPTIONS}
+            allLabel="Select Country"
+            variant="form"
+          />
+        </FormField>
+
+        <FormField label="Intake Year" error={fieldErrors.year}>
+          <YearPicker
+            value={formData.year}
+            onChange={(year) => handleFieldChange("year", year)}
+            showAll={false}
+            variant="form"
+          />
+        </FormField>
+
+        <div className="min-w-0 sm:col-span-2">
+          <span id="intake-label" className={LABEL_CLASS}>
+            Intake
+          </span>
+          <OptionPills
+            name="intake"
+            labelId="intake-label"
+            value={formData.intake}
+            options={INTAKE_OPTIONS}
+            onChange={(val) => handleFieldChange("intake", val)}
+          />
+        </div>
+
+        <FormField label="Budget" htmlFor="budget" error={fieldErrors.budget}>
+          <TextInput
+            id="budget"
+            type="number"
+            name="budget"
+            icon={<span className="text-sm font-semibold">{CURRENCY_SYMBOL}</span>}
+            placeholder="e.g. 500000"
+            value={formData.budget}
+            onChange={handleChange}
+            error={fieldErrors.budget}
+          />
+        </FormField>
+
+        <FormField label="Test Score" htmlFor="test_score" error={fieldErrors.test_score}>
+          <TextInput
+            id="test_score"
+            type="number"
+            step="any"
+            name="test_score"
+            icon={<Award size={16} />}
+            placeholder="e.g. 7.5"
+            value={formData.test_score}
+            onChange={handleChange}
+            error={fieldErrors.test_score}
+          />
+        </FormField>
+
+        <FormField label="Academic Details" htmlFor="academic_details" error={fieldErrors.academic_details}>
+          <TextInput
+            id="academic_details"
+            name="academic_details"
+            icon={<GraduationCap size={16} />}
+            placeholder="e.g. B.Sc Computer Science"
+            value={formData.academic_details}
+            onChange={handleChange}
+            error={fieldErrors.academic_details}
+          />
+        </FormField>
+
+        <FormField label="Work Experience" htmlFor="work_experience" error={fieldErrors.work_experience}>
+          <TextInput
+            id="work_experience"
+            name="work_experience"
+            icon={<Briefcase size={16} />}
+            placeholder="e.g. 2 years"
+            value={formData.work_experience}
+            onChange={handleChange}
+            error={fieldErrors.work_experience}
+          />
+        </FormField>
+      </FormSection>
+
+      {/* 3 — LEAD DETAILS */}
+      <FormSection
+        id={SECTIONS[2].id}
+        title={SECTIONS[2].title}
+        index={2}
+        open={openIds.includes("lead")}
+        onToggle={() => toggleSection("lead")}
+        {...progress[2]}
+      >
+        <FormField label="Status" error={fieldErrors.status}>
+          <FilterDropdown
+            value={formData.status}
+            onChange={(val) => handleFieldChange("status", val)}
+            options={STATUS_OPTIONS}
+            showAllOption={false}
+            variant="form"
+          />
+        </FormField>
+
+        <FormField label="Source File" error={fieldErrors.source_file}>
+          <FilterDropdown
+            value={useOther ? OTHERS_VALUE : formData.source_file}
+            onChange={handleSourceSelect}
+            options={dropdownOptions}
+            allLabel="Select Source File"
+            variant="form"
+          />
+        </FormField>
+
+        {useOther && (
+          <FormField label="Other Source" htmlFor="source_file" className="sm:col-span-2">
+            <TextInput
+              id="source_file"
+              name="source_file"
+              placeholder="Enter source file name"
+              value={formData.source_file}
+              onChange={handleChange}
+              autoFocus
+            />
+          </FormField>
+        )}
+      </FormSection>
+
+      {/* ERRORS THAT DO NOT BELONG TO A FIELD */}
+      {generalErrors.length > 0 && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {generalErrors.map(([key, message]) => (
+            <p key={key}>{String(message)}</p>
+          ))}
+        </div>
+      )}
+
+      <FormFooter
+        onCancel={onCancel}
+        saving={saving}
+        submitLabel={isEdit ? "Save Changes" : "Add Student"}
+      />
 
     </form>
   );

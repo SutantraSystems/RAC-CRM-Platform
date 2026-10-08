@@ -3,7 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Target, FileText, GraduationCap,
   DollarSign, BarChart3, Settings, ChevronDown, ChevronRight,
-  BookOpen, Search, Briefcase, Handshake, TestTube2
+  BookOpen, Search, Briefcase, Handshake, TestTube2,
+  Building2, CreditCard
 } from 'lucide-react';
 import logo from '../../assets/RAC.png';
 
@@ -11,19 +12,9 @@ const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Students', path: '/students' },
   { icon: FileText, label: 'Import Students', path: '/importstudents' },
+  { icon: Building2, label: 'Universities', path: '/universities' },
+  { icon: CreditCard, label: 'Payment', path: '/payments' },
 
-  // future integration
-  // { icon: Target, label: 'Leads', path: '/leads' },
-  // { icon: FileText, label: 'Applications', path: '/applications' },
-  // { icon: GraduationCap, label: 'Universities', path: '/universities' },
-  // { icon: BookOpen, label: 'Learning Resources', path: '/learning' },
-  // { icon: DollarSign, label: 'Revenue', path: '/finance' },
-  // { icon: Search, label: 'Search Program', path: '/search-program' },
-  // { icon: Briefcase, label: 'PRM', path: '/prm' },
-  // { icon: Handshake, label: 'Allied Services', path: '/allied' },
-  // { icon: TestTube2, label: 'Test Prep', path: '/test-prep' },
-  // { icon: BarChart3, label: 'Reports', path: '/reports' },
-  // { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {
@@ -55,7 +46,6 @@ export default function Sidebar({ collapsed, onToggle }) {
 
   return (
     <>
-      {/* Backdrop — only rendered on mobile while the drawer is open */}
       {mobileOpen && (
         <div
           onClick={onToggle}
@@ -96,7 +86,9 @@ export default function Sidebar({ collapsed, onToggle }) {
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive =
+              location.pathname === item.path ||
+              location.pathname.startsWith(`${item.path}/`);
             const showLabel = isMobile || !collapsed;
 
             return (

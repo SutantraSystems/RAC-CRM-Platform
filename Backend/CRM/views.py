@@ -7,11 +7,14 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .deduplication import ContactIndex, build_dedup_hash
-from .models import RACStudent,StudentReminder
+from .deduplication import (
+    ContactIndex, build_dedup_hash, parse_mobile_numbers, all_mobile_numbers,
+    describe_mobile_conflict, describe_repeated_mobile,
+)
+from .models import RACStudent,StudentReminder,University,Payment
 from .pagination import StandardPagination
 from .serializers import ( RACStudentListSerializer, RACStudentSerializer,RescheduleSerializer,StudentReminderSerializer,
- RACStudentListSerializer, RACStudentSerializer, StudentDocumentSerializer, StudentCommentSerializer )
+ RACStudentListSerializer, RACStudentSerializer, StudentDocumentSerializer, StudentCommentSerializer,UniversitySerializer, PaymentSerializer)
 
 from django.db.models import Count
 from rest_framework import generics,status
@@ -57,16 +60,6 @@ def apply_location_source_filters(queryset, params):
     return queryset
 
 
-def normalize_mobile_number(value):
-    value = clean_value(value)
-
-    if not value:
-        return None
-
-    value = re.sub(r"[^\d+]", "", value)
-
-    return value
-
 def filter_by_status(queryset, status_param):
     """Filter by status. Not Sure is the catch-all: any student whose status is not one of the other statuses (blank, missing, unknown) counts as Not Sure."""
     if status_param == RACStudent.STATUS_NOT_SURE:
@@ -107,6 +100,7 @@ class RACStudentViewSet(viewsets.ModelViewSet):
                 Q(full_name__icontains=search)
                 | Q(email__icontains=search)
                 | Q(mobile_number__icontains=search)
+                | Q(alternate_mobile_number__icontains=search)
                 | Q(passport_number__icontains=search)
                 | Q(preferred_country__icontains=search)
                 | Q(academic_details__icontains=search)
@@ -199,7 +193,6 @@ def parse_budget(value):
         return None
 
 # Parse an Excel cell into one of the valid Intake choices.
-# A blank or unrecognised value becomes "not_sure".
 def parse_intake(value):
     if pd.isna(value):
         return "not_sure"
@@ -377,7 +370,45 @@ class UploadStudentsAPIView(APIView):
                                 "contact",
                             ]
                         )
-                        mobile = normalize_mobile_number(mobile)
+                        alternate_mobile = get_column_value(
+                            row,
+                            [
+                                "alternate_mobile_number",
+                                "alternate_mobile",
+                                "alternate_mobile_no",
+                                "alternate_mobile_no.",
+                                "alternate_phone",
+                                "alternate_phone_number",
+                                "alternate_contact_number",
+                                "alternate_contact",
+                            ]
+                        )
+
+                        # Split / de-duplicate / length-check every number.
+                        mobile, alternate_mobile, mobile_errors, repeated = (
+                            parse_mobile_numbers(mobile, alternate_mobile)
+                        )
+
+                        # The same number twice in one row: reject as a duplicate.
+                        if repeated:
+                            total_skipped += 1
+                            duplicate_rows.append(
+                                f"{full_name} \u2013 "
+                                + "; ".join(
+                                    describe_repeated_mobile(number)
+                                    for _, number in repeated
+                                )
+                            )
+                            continue
+
+                        if mobile_errors:
+                            for field_name, message in mobile_errors.items():
+                                errors.append(
+                                    f"{file.name} - Row {index + 2}: "
+                                    f"{field_name}: {message}"
+                                )
+                            continue
+
                         location = get_column_value(
                             row,
                             [
@@ -397,6 +428,8 @@ class UploadStudentsAPIView(APIView):
                             "email": email,
 
                             "mobile_number": mobile,
+
+                            "alternate_mobile_number": alternate_mobile,
 
                             "dob": parse_date(
                                 row.get("dob")
@@ -499,21 +532,31 @@ class UploadStudentsAPIView(APIView):
                         )
                         continue
 
-                    # Email and mobile must be unique (DB + earlier rows).
                     reasons = []
                     if contact_index.email_exists(data["email"]):
-                        reasons.append("email")
-                    if contact_index.mobile_exists(data["mobile_number"]):
-                        reasons.append("mobile number")
+                        reasons.append("Email already exists")
+                    reasons.extend(
+                        describe_mobile_conflict(number, owner)
+                        for number, owner in contact_index.mobile_conflicts(
+                            all_mobile_numbers(
+                                data["mobile_number"],
+                                data["alternate_mobile_number"],
+                            )
+                        )
+                    )
                     if reasons:
                         total_skipped += 1
                         duplicate_rows.append(
-                            f"{file.name} - Row {index + 2}: "
-                            f"{' and '.join(reasons)} already exists."
+                            f"{data['full_name']} \u2013 {'; '.join(reasons)}"
                         )
                         continue
 
-                    contact_index.add(data["email"], data["mobile_number"])
+                    contact_index.add(
+                        data["email"],
+                        data["mobile_number"],
+                        data["alternate_mobile_number"],
+                        data["full_name"],
+                    )
 
                     to_insert.append(
                         RACStudent(
@@ -642,8 +685,8 @@ def student_status_summary(request):
     for row in counts:
         key = row["status"]
         if key not in summary:
-            key = RACStudent.STATUS_NOT_SURE  # blank / unknown -> Not Sure
-        summary[key] += row["count"]  # so the statuses always add up to the total
+            key = RACStudent.STATUS_NOT_SURE  
+        summary[key] += row["count"] 
 
     return Response(summary)
 
@@ -730,6 +773,7 @@ def student_ids(request):
             Q(full_name__icontains=search)
             | Q(email__icontains=search)
             | Q(mobile_number__icontains=search)
+            | Q(alternate_mobile_number__icontains=search)
             | Q(passport_number__icontains=search)
             | Q(preferred_country__icontains=search)
             | Q(academic_details__icontains=search)
@@ -828,3 +872,67 @@ def reminder_notifications(request):
 
     data = StudentReminderSerializer(queryset, many=True).data
     return Response({"count": len(data), "results": data})
+
+class SearchFilterViewSet(viewsets.ModelViewSet):
+
+    pagination_class = StandardPagination
+
+    search_fields = ()         
+    choice_search_fields = ()   
+    exact_filters = ()         
+    numeric_filters = ()       
+
+    def get_queryset(self):
+        queryset = self.queryset.all()
+        params = self.request.query_params
+
+        search = (params.get("search") or "").strip()
+        if search:
+            condition = Q()
+
+            for field in self.search_fields:
+                condition |= Q(**{f"{field}__icontains": search})
+
+            for field in self.choice_search_fields:
+                for value, label in self.queryset.model._meta.get_field(field).choices:
+                    if search.lower() in label.lower():
+                        condition |= Q(**{field: value})
+
+            queryset = queryset.filter(condition)
+
+        for field in self.exact_filters:
+            value = params.get(field)
+            if not value:
+                continue
+            if field in self.numeric_filters and not value.isdigit():
+                continue
+            queryset = queryset.filter(**{field: value})
+
+        return queryset
+
+    # Stamp created_by with the logged-in user's email, like Students.
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user.email)
+
+
+class UniversityViewSet(SearchFilterViewSet):
+    queryset = University.objects.all().order_by("-created_at", "-id")
+    serializer_class = UniversitySerializer
+
+    search_fields = (
+        "name",
+        "phone_number",
+        "email",
+        "organisation_name",
+        "designation",
+    )
+
+
+class PaymentViewSet(SearchFilterViewSet):
+    queryset = Payment.objects.all().order_by("-created_at", "-id")
+    serializer_class = PaymentSerializer
+
+    search_fields = ("student_name", "university", "organization")
+    choice_search_fields = ("intake", "payment_type", "status", "category")
+    exact_filters = ("intake", "year", "payment_type", "status", "category")
+    numeric_filters = ("year",)

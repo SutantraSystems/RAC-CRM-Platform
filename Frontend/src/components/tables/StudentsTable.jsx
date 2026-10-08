@@ -111,6 +111,7 @@ export default function StudentsTable({
               {[
                 "Full Name",
                 "Mobile",
+                "Alternate Mobile",
                 "Email",
                 "Status",
                 "Source File",
@@ -213,6 +214,11 @@ export default function StudentsTable({
                     {/* Mobile */}
                     <td className="px-2 py-1.5 text-slate-600 whitespace-nowrap">
                       {student.mobile_number}
+                    </td>
+
+                    {/* Alternate Mobile */}
+                    <td className="px-2 py-1.5 text-slate-600 whitespace-nowrap">
+                      {student.alternate_mobile_number || "-"}
                     </td>
 
                     {/* Email */}

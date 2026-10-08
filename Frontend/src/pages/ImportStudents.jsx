@@ -344,6 +344,19 @@ export default function ImportStudents() {
             </h2>
           </div>
 
+          {/* One-line summary */}
+          <div className="mb-4 sm:mb-5 space-y-1 text-sm sm:text-base font-semibold">
+            <p className="text-green-700">
+              ✓ {result.inserted} student{result.inserted === 1 ? "" : "s"} uploaded
+            </p>
+            {result.skipped_duplicates > 0 && (
+              <p className="text-red-600">
+                ✕ {result.skipped_duplicates} duplicate student
+                {result.skipped_duplicates === 1 ? "" : "s"} rejected
+              </p>
+            )}
+          </div>
+
           {/* Summary stat cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-5">
             <ResultStat
@@ -360,7 +373,7 @@ export default function ImportStudents() {
             />
             <ResultStat
               icon={AlertTriangle}
-              label="Duplicates Skipped"
+              label="Duplicates Rejected"
               value={result.skipped_duplicates}
               tone="amber"
             />
@@ -375,10 +388,10 @@ export default function ImportStudents() {
           {/* Detailed, categorized breakdowns */}
           <div className="space-y-3">
             <DetailList
-              title="Duplicate records skipped"
+              title="Duplicate students rejected"
               items={result.duplicate_rows}
               icon={AlertTriangle}
-              tone="amber"
+              tone="red"
             />
 
             <DetailList
