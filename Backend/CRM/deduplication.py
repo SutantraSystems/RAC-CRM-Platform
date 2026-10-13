@@ -109,10 +109,6 @@ class ContactIndex:
         e = normalize_email(email)
         return e is not None and e in self.emails
 
-    def mobile_exists(self, mobile):
-        m = normalize_mobile(mobile)
-        return m is not None and m in self.mobiles
-
     def mobile_conflicts(self, numbers):
         """[(number, owner name)] for every given number that already exists."""
         conflicts = []

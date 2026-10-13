@@ -9,7 +9,7 @@ import {
   ListChecks,
 } from "lucide-react";
 import { uploadStudentsExcel } from "../services/studentApi";
-import Toast from "../components/ui/Toast";
+import useToast from "../hooks/useToast";
 
 const ResultStat = ({ icon: Icon, label, value, tone }) => {
   const tones = {
@@ -60,7 +60,7 @@ export default function ImportStudents() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [toast, setToast] = useState(null);
+  const { setToast, toastElement } = useToast();
 
   const inputRef = useRef();
 
@@ -142,13 +142,7 @@ export default function ImportStudents() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Toast */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toastElement}
 
       {/* HEADER CARD */}
       <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-4 sm:p-6">

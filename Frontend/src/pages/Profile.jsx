@@ -3,7 +3,7 @@ import { Mail, User as UserIcon, LogOut, Pencil, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { updateProfile } from '../services/authApi';
-import Toast from '../components/ui/Toast';
+import useToast from "../hooks/useToast";
 
 export default function Profile() {
     const { user, setUser, logout } = useAuth();
@@ -13,7 +13,7 @@ export default function Profile() {
     const [nameInput, setNameInput] = useState('');
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
-    const [toast, setToast] = useState(null);
+    const { setToast, toastElement } = useToast();
 
     const fullName = user?.full_name || '';
     const email = user?.email || '';
@@ -90,13 +90,7 @@ export default function Profile() {
     };
     return (
         <div className="max-w-3xl mx-auto space-y-6">
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
+            {toastElement}
 
             {/* Header card */}
             <div className="bg-primary-600 rounded-2xl p-4 sm:p-6 relative overflow-hidden shadow-card">
@@ -153,8 +147,7 @@ export default function Profile() {
                                         autoFocus
                                         maxLength={150}
                                         placeholder="Enter your full name"
-                                        className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-400 ${error ? 'border-red-400' : 'border-slate-200'
-                                            }`}
+                                        className={`form-control ${error ? "border-red-400 focus:border-red-500 focus:ring-red-100" : ""}`}
                                     />
 
                                     {error && (

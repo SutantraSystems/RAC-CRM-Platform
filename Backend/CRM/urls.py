@@ -1,8 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (RACStudentViewSet, UploadStudentsAPIView, student_count,BulkDeleteStudentsAPIView,student_ids, StudentDocumentListCreateView,
-StudentDocumentDeleteView, StudentCommentListCreateView, StudentCommentDetailView, student_status_summary,student_locations,student_source_files,
-StudentReminderListCreateView, StudentReminderDetailView,reminder_complete, reminder_reschedule, reminder_notifications,UniversityViewSet, PaymentViewSet
+StudentDocumentDeleteView, StudentCommentListCreateView, StudentCommentDetailView, student_status_summary,student_source_files,
+StudentReminderListCreateView, StudentReminderDetailView,reminder_complete, reminder_reschedule, reminder_notifications,UniversityViewSet, PaymentViewSet,
+ReminderHistoryListView, reminder_history_summary, reminder_history_users,
+reminder_history_ids, BulkDeleteRemindersAPIView
 )
 
 router = DefaultRouter()
@@ -19,7 +21,6 @@ urlpatterns = [
     path("students/count/", student_count),
     path("students/status-summary/", student_status_summary),
     path("students/ids/", student_ids),
-    path("students/locations/", student_locations),
     path("students/source-files/", student_source_files),
 
 
@@ -34,6 +35,11 @@ urlpatterns = [
     # Reminders (shared by everyone in RAC). Keep separate from comments.
     path("students/<int:student_id>/reminders/", StudentReminderListCreateView.as_view(), name="student-reminders"),
     path("students/reminders/notifications/", reminder_notifications, name="reminder-notifications"),
+    path("students/reminders/history/", ReminderHistoryListView.as_view(), name="reminder-history"),
+    path("students/reminders/history/summary/", reminder_history_summary, name="reminder-history-summary"),
+    path("students/reminders/history/users/", reminder_history_users, name="reminder-history-users"),
+    path("students/reminders/history/ids/", reminder_history_ids, name="reminder-history-ids"),
+    path("students/reminders/bulk-delete/", BulkDeleteRemindersAPIView.as_view(), name="reminder-bulk-delete"),
     path("students/reminders/<int:pk>/", StudentReminderDetailView.as_view(), name="student-reminder-detail"),
     path("students/reminders/<int:pk>/complete/", reminder_complete, name="student-reminder-complete"),
     path("students/reminders/<int:pk>/reschedule/", reminder_reschedule, name="student-reminder-reschedule"),

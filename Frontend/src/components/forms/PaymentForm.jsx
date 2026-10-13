@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { User, GraduationCap, Building2, Tag } from "lucide-react";
+import { User, GraduationCap, Building2 } from "lucide-react";
 import FormField, {
   TextInput,
   OptionPills,

@@ -1,47 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText,
-  ShieldCheck,
-  Award,
-  DollarSign,
-  Clock,
-  AlertCircle,
-  TrendingUp,
-  Handshake,
-  Filter,
-  X,
-}
-  from "lucide-react";
+  Filter, X, Users, UserX, ThumbsUp, HelpCircle, ListChecks, FileText, Send,
+  Wallet, BadgeCheck, CalendarClock, Star, PhoneOff, PhoneMissed,
+} from "lucide-react";
 import KpiCard from "../components/cards/KpiCard";
-import {
-  StudentGrowthChart,
-  RevenueChart,
-  CountryPieChart,
-}
-  from "../components/charts/Charts";
-import {
-  dashboardStats,
-  studentGrowthData,
-  revenueData,
-  countryData,
-  applicationsData,
-}
-  from "../data/mockData";
 import { getStudentCount, getStudentStatusSummary } from "../services/studentApi";
 import { countryList, STATUS_OPTIONS } from "../data/students";
+import { STUDENT_STATUS_TONES } from "../config/crmConfig";
 import FilterDropdown from "../components/ui/FilterDropdown";
 import YearFilterCalendar from "../components/ui/YearPicker";
 
-const countryOptions = countryList.map((c) => ({ value: c, label: c }));
-
-const appStatusColors = {
-  "Offer Received": "bg-green-100 text-green-700",
-  "Under Review": "bg-yellow-100 text-yellow-700",
-  "Conditional Offer": "bg-blue-100 text-blue-700",
-  "Visa Approved": "bg-purple-100 text-purple-700",
-  Applied: "bg-slate-100 text-slate-700",
+const KPI_ICONS = {
+  total: Users,
+  not_interested: UserX,
+  interested: ThumbsUp,
+  not_sure: HelpCircle,
+  shortlisting_done: ListChecks,
+  docs_shared: FileText,
+  applied: Send,
+  deposit_paid: Wallet,
+  visa_granted: BadgeCheck,
+  future_intake: CalendarClock,
+  prm_prospect: Star,
+  no_response: PhoneOff,
+  invalid_number: PhoneMissed,
 };
+
+const countryOptions = countryList.map((c) => ({ value: c, label: c }));
 
 const DEFAULT_DATE_FILTERS = {
   year: null,
@@ -207,6 +193,8 @@ export default function Dashboard() {
             key={kpi.key}
             title={kpi.title}
             value={kpi.value}
+            icon={KPI_ICONS[kpi.key]}
+            tone={STUDENT_STATUS_TONES[kpi.key] || "primary"}
             index={i}
             onClick={() =>
               openStudentList(kpi.key === "total" ? appliedStatus : kpi.key)

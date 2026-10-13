@@ -2,25 +2,53 @@ import React, { useState, useEffect } from "react";
 import { Filter, Search, X } from "lucide-react";
 import FilterDropdown from "../ui/FilterDropdown";
 import YearFilterCalendar from "../ui/YearPicker";
+import DateRangeFilter from "../ui/DateRangeFilter";
 
-const emptyDraft = (fields) =>
-  Object.fromEntries(fields.map((f) => [f.key, f.type === "year" ? null : ""]));
+// A field owns one URL key, or three for "daterange" (key + fromKey + toKey).
+const keysOf = (field) => [field.key, field.fromKey, field.toKey].filter(Boolean);
 
-const toDraft = (fields, applied) => {
-  const draft = emptyDraft(fields);
-  fields.forEach((f) => {
-    const value = applied?.[f.key];
-    draft[f.key] = f.type === "year" ? value || null : value ?? "";
-  });
+const emptyDraft = (fields) => {
+  const draft = {};
+  fields.forEach((f) => keysOf(f).forEach((k) => (draft[k] = f.type === "year" ? null : "")));
   return draft;
 };
 
-export default function ListFilters({ fields = [], onFilter, onClear, appliedFilters }) {
+const toDraft = (fields, applied) => {
+  const draft = emptyDraft(fields);
+  fields.forEach((f) =>
+    keysOf(f).forEach((k) => {
+      const value = applied?.[k];
+      draft[k] = f.type === "year" ? value || null : value ?? "";
+    })
+  );
+  return draft;
+};
+
+export default function ListFilters({
+  fields = [],
+  onFilter,
+  onClear,
+  appliedFilters,
+  clearLabel = "Clear",
+}) {
   const [filters, setFilters] = useState(() => toDraft(fields, appliedFilters));
+  const [remoteOptions, setRemoteOptions] = useState({});
 
   useEffect(() => {
     setFilters(toDraft(fields, appliedFilters));
   }, [appliedFilters, fields]);
+
+  // Select fields with `loadOptions` (e.g. the users list) fetch their options once.
+  useEffect(() => {
+    fields
+      .filter((f) => f.loadOptions)
+      .forEach((f) =>
+        f
+          .loadOptions()
+          .then((options) => setRemoteOptions((prev) => ({ ...prev, [f.key]: options })))
+          .catch((error) => console.error(`Failed to load ${f.key} options:`, error))
+      );
+  }, [fields]);
 
   const handleChange = (key, value) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -68,6 +96,26 @@ export default function ListFilters({ fields = [], onFilter, onClear, appliedFil
       );
     }
 
+    if (field.type === "daterange") {
+      return (
+        <div key={field.key} className="w-full min-w-0 lg:w-[210px] lg:shrink-0">
+          <DateRangeFilter
+            range={filters[field.key]}
+            from={filters[field.fromKey]}
+            to={filters[field.toKey]}
+            onChange={({ range, from, to }) =>
+              setFilters((prev) => ({
+                ...prev,
+                [field.key]: range,
+                [field.fromKey]: from,
+                [field.toKey]: to,
+              }))
+            }
+          />
+        </div>
+      );
+    }
+
     return (
       <div
         key={field.key}
@@ -76,7 +124,7 @@ export default function ListFilters({ fields = [], onFilter, onClear, appliedFil
         <FilterDropdown
           value={filters[field.key]}
           onChange={(val) => handleChange(field.key, val)}
-          options={field.options}
+          options={field.options || remoteOptions[field.key] || []}
           allLabel={field.allLabel}
         />
       </div>
@@ -109,7 +157,7 @@ export default function ListFilters({ fields = [], onFilter, onClear, appliedFil
             className="btn-outline h-[42px] flex-1 lg:flex-none flex items-center justify-center gap-2 whitespace-nowrap"
           >
             <X size={14} />
-            Clear
+            {clearLabel}
           </button>
         </div>
       </div>

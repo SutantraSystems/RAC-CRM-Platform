@@ -20,14 +20,16 @@ import Universities from "./pages/Universities";
 import UniversityDetails from "./pages/UniversityDetails";
 import Payments from "./pages/Payments";
 import PaymentDetails from "./pages/PaymentDetails";
+import ReminderHistory from "./pages/ReminderHistory";
 
 
 const pageTitles = {
   "/dashboard": "Dashboard",
   "/students": "Students",
   "/importstudents": "Import Students",
-  "/universities": "Universities",
+  "/universities": "Contact List",
   "/payments": "Payments",
+  "/reminder-history": "Reminder History",
   "/profile": "My Profile",
 
 };
@@ -60,7 +62,7 @@ const CRMLayout = ({ children }) => {
   const location = useLocation();
   const pageTitle = pageTitles[location.pathname] ||
     (location.pathname.startsWith("/students/") ? "Student Details"
-      : location.pathname.startsWith("/universities/") ? "University Details"
+      : location.pathname.startsWith("/universities/") ? "Contact Details"
         : location.pathname.startsWith("/payments/") ? "Payment Details"
           : "Dashboard");
 
@@ -150,6 +152,7 @@ const App = () => {
         <Route path="/universities/:id" element={<ProtectedPage><UniversityDetails /></ProtectedPage>} />
         <Route path="/payments" element={<ProtectedPage><Payments /></ProtectedPage>} />
         <Route path="/payments/:id" element={<ProtectedPage><PaymentDetails /></ProtectedPage>} />
+        <Route path="/reminder-history" element={<ProtectedPage><ReminderHistory /></ProtectedPage>} />
 
         {/* CATCH-ALL (unknown routes) */}
         <Route

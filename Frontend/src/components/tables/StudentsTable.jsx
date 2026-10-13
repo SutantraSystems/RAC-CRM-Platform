@@ -1,6 +1,8 @@
 import React, { useRef, useEffect } from "react";
 import { Edit2, Trash2, Plus, Eye } from "lucide-react";
 import { getStatusLabel } from "../../data/students";
+import { STUDENT_STATUS_TONES } from "../../config/crmConfig";
+import StatusBadge from "../ui/StatusBadge";
 export default function StudentsTable({
   data,
   page,
@@ -228,9 +230,10 @@ export default function StudentsTable({
 
                     {/* Status */}
                     <td className="px-2 py-1.5 whitespace-nowrap">
-                      <span className="text-sm font-medium text-slate-700">
-                        {getStatusLabel(currentStatus)}
-                      </span>
+                      <StatusBadge
+                        label={getStatusLabel(currentStatus)}
+                        tone={STUDENT_STATUS_TONES[currentStatus]}
+                      />
                     </td>
 
                     {/* Source File */}

@@ -7,4 +7,6 @@ export const createCrudApi = (basePath) => ({
   update: (id, data) => axiosInstance.put(`${basePath}/${id}/`, data),
   patch: (id, data) => axiosInstance.patch(`${basePath}/${id}/`, data),
   remove: (id) => axiosInstance.delete(`${basePath}/${id}/`),
+  ids: (params = {}) => axiosInstance.get(`${basePath}/ids/`, { params }),
+  bulkRemove: (ids) => axiosInstance.delete(`${basePath}/bulk-delete/`, { data: { ids } }),
 });

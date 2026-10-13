@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GraduationCap, Phone, Mail, Building2, Briefcase } from "lucide-react";
+import { User, Phone, Mail, Building2, Briefcase } from "lucide-react";
 import FormField, { TextInput, FormSection, FormFooter } from "../common/FormField";
 import { cleanPayload } from "../../config/crmConfig";
 
@@ -49,13 +49,13 @@ export default function UniversityForm({ initialData = {}, onSubmit, onCancel })
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-3">
-      <FormSection id="university" title="University Details">
+      <FormSection id="university" title="Contact Details">
         <FormField label="Name" htmlFor="name" required error={fieldErrors.name} className="sm:col-span-2">
           <TextInput
             id="name"
             name="name"
-            icon={<GraduationCap size={16} />}
-            placeholder="e.g. University of Toronto"
+            icon={<User size={16} />}
+            placeholder="e.g. Rahul Sharma"
             value={formData.name}
             onChange={handleChange}
             autoFocus
@@ -82,7 +82,7 @@ export default function UniversityForm({ initialData = {}, onSubmit, onCancel })
             type="email"
             name="email"
             icon={<Mail size={16} />}
-            placeholder="e.g. admissions@university.edu"
+            placeholder="e.g. rahul@example.com"
             value={formData.email}
             onChange={handleChange}
             error={fieldErrors.email}
@@ -117,7 +117,7 @@ export default function UniversityForm({ initialData = {}, onSubmit, onCancel })
       <FormFooter
         onCancel={onCancel}
         saving={saving}
-        submitLabel={initialData?.id ? "Save Changes" : "Add University"}
+        submitLabel={initialData?.id ? "Save Changes" : "Add Contact"}
       />
     </form>
   );

@@ -14,7 +14,6 @@ import {
   AlarmClock,
   Hourglass,
   Loader2,
-  MoreVertical,
 } from "lucide-react";
 
 import {
@@ -27,6 +26,7 @@ import {
 } from "../../services/studentDetailsApi";
 
 import ReminderFormModal from "../ui/ReminderFormModal";
+import ConfirmDeleteModal from "../common/ConfirmDeleteModal";
 
 import {
   formatDate,
@@ -608,11 +608,6 @@ export default function RemindersTab({
     },
   ];
 
-  const show =
-    filter === "all" || filter === "attention"
-      ? true
-      : false;
-
   const renderReminder = (reminder) => (
     <ReminderItem
       key={reminder.id}
@@ -876,93 +871,15 @@ export default function RemindersTab({
       )}
 
       {/* DELETE CONFIRMATION */}
-      {deleteTarget && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4"
-          onClick={() =>
-            !deleting &&
-            setDeleteTarget(null)
-          }
-        >
-          <div
-            className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-            <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 sm:px-6 py-4">
-
-              <h3 className="text-base font-semibold text-slate-900">
-                Delete Reminder?
-              </h3>
-
-              <button
-                onClick={() =>
-                  setDeleteTarget(null)
-                }
-                disabled={deleting}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                ×
-              </button>
-
-            </div>
-
-            <div className="px-4 sm:px-6 py-5">
-
-              <div className="flex items-start gap-3">
-
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
-                  <Trash2
-                    size={18}
-                    className="text-red-600"
-                  />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-800">
-                    Delete this reminder?
-                  </p>
-
-                  <p className="mt-1 text-sm text-slate-500 break-words">
-                    "{deleteTarget.title}"
-                    <br />
-                  </p>
-                </div>
-
-              </div>
-
-            </div>
-
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 border-t border-slate-200 px-4 sm:px-6 py-4">
-
-              <button
-                onClick={() =>
-                  setDeleteTarget(null)
-                }
-                disabled={deleting}
-                className="w-full sm:w-auto rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={
-                  handleConfirmDelete
-                }
-                disabled={deleting}
-                className="w-full sm:w-auto rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleting
-                  ? "Deleting..."
-                  : "Delete Reminder"}
-              </button>
-
-            </div>
-
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteModal
+        open={Boolean(deleteTarget)}
+        title={"Delete Reminder?"}
+        message={`Are you sure you want to delete the reminder "${deleteTarget?.title}"?`}
+        confirmLabel={"Delete Reminder"}
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+      />
 
     </div>
   );

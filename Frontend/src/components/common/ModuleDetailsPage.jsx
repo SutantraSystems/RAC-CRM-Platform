@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Edit2, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import FormModal from "./FormModal";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
-import Toast from "../ui/Toast";
 import { getErrorMessage, getFieldErrors } from "../../config/crmConfig";
+import RecordActions from "./RecordActions";
+import useToast from "../../hooks/useToast";
 
 const TABS = ["Overview"];
 export default function ModuleDetailsPage({
@@ -30,7 +31,7 @@ export default function ModuleDetailsPage({
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [toast, setToast] = useState(null);
+  const { setToast, toastElement } = useToast();
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -127,9 +128,7 @@ export default function ModuleDetailsPage({
 
   return (
     <div className="space-y-4 min-w-0">
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
+      {toastElement}
 
       <button
         onClick={() => navigate(fromList)}
@@ -158,26 +157,11 @@ export default function ModuleDetailsPage({
             ))}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowEdit(true)}
-              title={`Edit ${singular}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
-            >
-              <Edit2 size={14} />
-              <span className="hidden sm:inline">Edit</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowDelete(true)}
-              title={`Delete ${singular}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-50 text-danger hover:bg-red-100 transition-colors"
-            >
-              <Trash2 size={14} />
-              <span className="hidden sm:inline">Delete</span>
-            </button>
-          </div>
+          <RecordActions
+            singular={singular}
+            onEdit={() => setShowEdit(true)}
+            onDelete={() => setShowDelete(true)}
+          />
         </div>
 
         <div className="p-3 sm:p-5">{renderOverview({ item, onPatch: handlePatch })}</div>

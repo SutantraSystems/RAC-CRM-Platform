@@ -1,5 +1,11 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Edit2, Trash2, Plus, Eye } from "lucide-react";
+
+const ACTION_TONES = {
+  view: "bg-slate-50 text-slate-600 hover:bg-slate-100",
+  edit: "bg-primary-50 text-primary-600 hover:bg-primary-100",
+  delete: "bg-red-50 text-danger hover:bg-red-100",
+};
 
 
 export default function DataTable({
@@ -17,7 +23,36 @@ export default function DataTable({
   onEdit,
   onDelete,
   onRowClick,
+  rowActions, // optional (row) => [{ key, title, icon, tone, onClick }] to replace Edit / Delete per row
+  showTotal = true, // false hides the "N total records" line
+  selectedIds, // pass a Set (with the two handlers) to show row checkboxes
+  onToggleSelect,
+  onToggleSelectAll,
 }) {
+  const selectable = Boolean(selectedIds);
+  const headerCheckboxRef = useRef(null);
+
+  const pageIds = data.map((row) => row.id);
+  const selectedOnPage = pageIds.filter((id) => selectedIds?.has(id)).length;
+  const allOnPageSelected = pageIds.length > 0 && selectedOnPage === pageIds.length;
+
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = selectedOnPage > 0 && !allOnPageSelected;
+    }
+  }, [selectedOnPage, allOnPageSelected]);
+
+  // View is always first; Edit / Delete come from the handlers unless rowActions is given.
+  const getActions = (row) => [
+    { key: "view", title: "View Details", icon: Eye, tone: "view", onClick: (r) => onRowClick?.(r) },
+    ...(rowActions
+      ? rowActions(row)
+      : [
+          onEdit && { key: "edit", title: "Edit", icon: Edit2, tone: "edit", onClick: onEdit },
+          onDelete && { key: "delete", title: "Delete", icon: Trash2, tone: "delete", onClick: onDelete },
+        ].filter(Boolean)),
+  ];
+
   const renderCell = (column, row) => {
     if (column.render) return column.render(row);
 
@@ -31,17 +66,19 @@ export default function DataTable({
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 sm:py-1.5 border-b border-slate-400 bg-slate-50/50">
         <div className="min-w-0">
           <h2 className="font-semibold text-slate-800 text-base">{title}</h2>
-          <p className="text-xs text-slate-400 mt-0.5">{total} total records</p>
+          {showTotal && <p className="text-xs text-slate-400 mt-0.5">{total} total records</p>}
         </div>
 
-        <button
-          type="button"
-          onClick={onAdd}
-          className="btn-primary flex shrink-0 items-center gap-2 px-4 sm:px-5"
-        >
-          <Plus size={15} />
-          {addLabel}
-        </button>
+        {onAdd && (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="btn-primary flex shrink-0 items-center gap-2 px-4 sm:px-5"
+          >
+            <Plus size={15} />
+            {addLabel}
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -52,6 +89,17 @@ export default function DataTable({
         >
           <thead className="sticky top-0 z-30">
             <tr>
+              {selectable && (
+                <th className="px-4 py-2 w-10 text-left bg-white border-b border-slate-200 sticky top-0 z-30">
+                  <input
+                    ref={headerCheckboxRef}
+                    type="checkbox"
+                    checked={allOnPageSelected}
+                    onChange={(e) => onToggleSelectAll?.(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                  />
+                </th>
+              )}
               {columns.map((column) => (
                 <th
                   key={column.key}
@@ -70,7 +118,7 @@ export default function DataTable({
             {data.length === 0 ? (
               <tr>
                 <td
-                  colSpan={columns.length + 1}
+                  colSpan={columns.length + 1 + (selectable ? 1 : 0)}
                   className="text-center py-10 text-slate-400 bg-white rounded-xl"
                 >
                   No {itemLabel} found
@@ -83,54 +131,48 @@ export default function DataTable({
                   onClick={() => onRowClick?.(row)}
                   className="bg-white border-b border-slate-100 hover:bg-slate-200 transition-colors duration-150 cursor-pointer"
                 >
+                  {selectable && (
+                    <td className="px-4 py-1.5 rounded-l-xl" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(row.id)}
+                        onChange={() => onToggleSelect?.(row.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      />
+                    </td>
+                  )}
                   {columns.map((column, index) => (
                     <td
                       key={column.key}
-                      className={`px-4 py-1.5 text-slate-700 whitespace-nowrap ${
-                        index === 0 ? "rounded-l-xl text-slate-800" : ""
-                      }`}
+                      className={`px-4 py-1.5 text-slate-700 ${
+                        column.wrap ? `whitespace-normal py-2 ${column.widthClass || ""}` : "whitespace-nowrap"
+                      } ${index === 0 && !selectable ? "rounded-l-xl text-slate-800" : ""}`}
                     >
-                      {renderCell(column, row)}
+                      {column.wrap ? (
+                        // Wrapped columns always show the full text.
+                        <div className="[overflow-wrap:anywhere] whitespace-pre-line">{renderCell(column, row)}</div>
+                      ) : (
+                        renderCell(column, row)
+                      )}
                     </td>
                   ))}
 
                   <td className="px-2 py-1.5 rounded-r-xl">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRowClick?.(row);
-                        }}
-                        title="View Details"
-                        className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"
-                      >
-                        <Eye size={14} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEdit?.(row);
-                        }}
-                        title="Edit"
-                        className="p-2 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete?.(row);
-                        }}
-                        title="Delete"
-                        className="p-2 rounded-lg bg-red-50 text-danger hover:bg-red-100 transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      {getActions(row).map(({ key, title: actionTitle, icon: Icon, tone, onClick }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onClick(row);
+                          }}
+                          title={actionTitle}
+                          className={`p-2 rounded-lg transition-colors ${ACTION_TONES[tone]}`}
+                        >
+                          <Icon size={14} />
+                        </button>
+                      ))}
                     </div>
                   </td>
                 </tr>

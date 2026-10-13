@@ -1,9 +1,10 @@
-from datetime import datetime
 import pandas as pd
+from datetime import datetime, time, timedelta, timezone as dt_timezone
 
+from django.contrib.auth import get_user_model
 from django.db.models import Q
-from rest_framework import status, viewsets
-from rest_framework.decorators import api_view
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -11,17 +12,19 @@ from .deduplication import (
     ContactIndex, build_dedup_hash, parse_mobile_numbers, all_mobile_numbers,
     describe_mobile_conflict, describe_repeated_mobile,
 )
-from .models import RACStudent,StudentReminder,University,Payment
+from .models import RACStudent, StudentReminder, University, Payment
 from .pagination import StandardPagination
-from .serializers import ( RACStudentListSerializer, RACStudentSerializer,RescheduleSerializer,StudentReminderSerializer,
- RACStudentListSerializer, RACStudentSerializer, StudentDocumentSerializer, StudentCommentSerializer,UniversitySerializer, PaymentSerializer)
+from .serializers import (
+    RACStudentListSerializer, RACStudentSerializer, RescheduleSerializer,
+    StudentReminderSerializer, StudentDocumentSerializer, StudentCommentSerializer,
+    UniversitySerializer, PaymentSerializer, _user_name,
+)
 
 from django.db.models import Count
-from rest_framework import generics,status
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 
-from .models import RACStudent, StudentDocument, StudentComment
+from .models import StudentDocument, StudentComment
 import re
 import os
 from django.utils import timezone
@@ -638,18 +641,6 @@ def student_count(request):
 
 # Student list / filter related views
 @api_view(["GET"])
-def student_locations(request):
-    locations = (
-        RACStudent.objects
-        .exclude(location__isnull=True)
-        .exclude(location="")
-        .values_list("location", flat=True)
-        .distinct()
-        .order_by("location")
-    )
-    return Response({"locations": list(locations)})
-
-@api_view(["GET"])
 def student_source_files(request):
     files = (
         RACStudent.objects
@@ -823,11 +814,6 @@ class StudentReminderDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = _reminders()
 
     def perform_destroy(self, instance):
-        # Completed reminders are permanent history.
-        if instance.is_completed:
-            raise PermissionDenied(
-                "Completed reminders are kept as history and can't be deleted."
-            )
         instance.delete()
 
 # Mark a reminder as done. Safe to call twice.
@@ -873,6 +859,150 @@ def reminder_notifications(request):
     data = StudentReminderSerializer(queryset, many=True).data
     return Response({"count": len(data), "results": data})
 
+# Reminder History: every reminder across all students, newest first, with filters.
+# Dates are matched against remind_at on India (IST) calendar days, same as the UI.
+IST = dt_timezone(timedelta(hours=5, minutes=30))
+
+
+def _parse_day(value):
+    try:
+        return datetime.strptime(value or "", "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _day_start(day):
+    return datetime.combine(day, time.min, tzinfo=IST)
+
+
+# Returns (start, end) for the chosen range; None means open-ended, end is exclusive.
+def _history_date_bounds(params):
+    today = timezone.now().astimezone(IST).date()
+    one_day = timedelta(days=1)
+    preset = params.get("date_range")
+
+    if preset == "today":
+        start, end = today, today + one_day
+    elif preset == "yesterday":
+        start, end = today - one_day, today
+    elif preset == "week":
+        start, end = today - timedelta(days=6), today + one_day
+    elif preset == "custom":
+        start = _parse_day(params.get("date_from"))
+        last = _parse_day(params.get("date_to"))
+        end = last + one_day if last else None
+    else:
+        return None, None
+
+    return (_day_start(start) if start else None), (_day_start(end) if end else None)
+
+
+# Status is computed from the clock (never stored), so it is turned into a query here.
+def _reminder_status_q(status_name, now=None):
+    now = now or timezone.now()
+    open_reminder = Q(completed_at__isnull=True)
+    due_from = now - StudentReminder.due_window()
+
+    if status_name == StudentReminder.STATUS_COMPLETED:
+        return Q(completed_at__isnull=False)
+    if status_name == StudentReminder.STATUS_UPCOMING:
+        return open_reminder & Q(remind_at__gt=now)
+    if status_name == StudentReminder.STATUS_DUE:
+        return open_reminder & Q(remind_at__lte=now, remind_at__gte=due_from)
+    if status_name == StudentReminder.STATUS_OVERDUE:
+        return open_reminder & Q(remind_at__lt=due_from)
+    return None
+
+
+def filter_reminder_history(queryset, params, include_status=True):
+    search = (params.get("search") or "").strip()
+    if search:
+        queryset = queryset.filter(
+            Q(title__icontains=search)
+            | Q(student__full_name__icontains=search)
+            | Q(created_by__first_name__icontains=search)
+            | Q(created_by__email__icontains=search)
+        )
+
+    start, end = _history_date_bounds(params)
+    if start:
+        queryset = queryset.filter(remind_at__gte=start)
+    if end:
+        queryset = queryset.filter(remind_at__lt=end)
+
+    user_id = params.get("user")
+    if user_id and user_id.isdigit():
+        queryset = queryset.filter(created_by_id=int(user_id))
+
+    if include_status:
+        status_q = _reminder_status_q(params.get("status"))
+        if status_q is not None:
+            queryset = queryset.filter(status_q)
+
+    return queryset
+
+
+class ReminderHistoryListView(generics.ListAPIView):
+    serializer_class = StudentReminderSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        queryset = filter_reminder_history(_reminders(), self.request.GET)
+        return queryset.order_by("-remind_at", "-id")
+
+
+# Card counts for the same filters, ignoring the status filter so the breakdown stays visible.
+@api_view(["GET"])
+def reminder_history_summary(request):
+    queryset = filter_reminder_history(_reminders(), request.GET, include_status=False)
+    now = timezone.now()
+
+    counts = queryset.aggregate(
+        total=Count("id"),
+        **{
+            name: Count("id", filter=_reminder_status_q(name, now))
+            for name in (
+                StudentReminder.STATUS_UPCOMING,
+                StudentReminder.STATUS_DUE,
+                StudentReminder.STATUS_OVERDUE,
+                StudentReminder.STATUS_COMPLETED,
+            )
+        },
+    )
+    return Response(counts)
+
+
+# Ids matching the current Reminder History filters, for "select all across pages".
+@api_view(["GET"])
+def reminder_history_ids(request):
+    queryset = filter_reminder_history(_reminders(), request.GET)
+    return Response({"ids": list(queryset.values_list("id", flat=True))})
+
+
+class BulkDeleteRemindersAPIView(APIView):
+
+    def delete(self, request):
+        ids = request.data.get("ids", [])
+
+        if not isinstance(ids, list) or not ids:
+            return Response(
+                {"error": "Provide a non-empty list of reminder ids to delete."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deleted_count, _ = StudentReminder.objects.filter(id__in=ids).delete()
+        return Response({"success": True, "deleted_count": deleted_count})
+
+
+# Users dropdown for the Reminder History filter.
+@api_view(["GET"])
+def reminder_history_users(request):
+    users = get_user_model().objects.filter(is_active=True).order_by("first_name", "email")
+    return Response({
+        "results": [{"id": user.id, "name": _user_name(user) or user.get_username()} for user in users]
+    })
+
+
 class SearchFilterViewSet(viewsets.ModelViewSet):
 
     pagination_class = StandardPagination
@@ -913,6 +1043,24 @@ class SearchFilterViewSet(viewsets.ModelViewSet):
     # Stamp created_by with the logged-in user's email, like Students.
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user.email)
+
+    # Ids matching the current search / filters, for "select all across pages".
+    @action(detail=False, methods=["get"], url_path="ids")
+    def ids(self, request):
+        return Response({"ids": list(self.get_queryset().values_list("id", flat=True))})
+
+    @action(detail=False, methods=["delete"], url_path="bulk-delete")
+    def bulk_delete(self, request):
+        ids = request.data.get("ids", [])
+
+        if not isinstance(ids, list) or not ids:
+            return Response(
+                {"error": "Provide a non-empty list of ids to delete."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deleted_count, _ = self.queryset.filter(id__in=ids).delete()
+        return Response({"success": True, "deleted_count": deleted_count})
 
 
 class UniversityViewSet(SearchFilterViewSet):

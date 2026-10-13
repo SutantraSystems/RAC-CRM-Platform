@@ -5,7 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import RegisterSerializer,ResetPasswordSerializer,UpdateProfileSerializer
-from .utils import get_short_name,get_display_name
+from .utils import get_display_name
 from .session_timeout import seconds_remaining
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator

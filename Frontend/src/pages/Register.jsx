@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import racLogo from "../assets/RAC.png";
 import { registerUser } from "../services/authApi";
-import Toast from "../components/ui/Toast";
+import useToast from "../hooks/useToast";
+import { LABEL_CLASS } from "../components/common/FormField";
 
 const Register = () => {
     const navigate = useNavigate();
@@ -17,7 +18,7 @@ const Register = () => {
 
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
-    const [toast, setToast] = useState(null);
+    const { setToast, toastElement } = useToast();
 
     const validateForm = () => {
         const newErrors = {};
@@ -102,13 +103,7 @@ const Register = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 px-3 py-6 sm:px-4">
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
+            {toastElement}
 
             <div className="w-full max-w-md bg-white rounded-lg shadow-md p-5 sm:p-8">
 
@@ -145,7 +140,7 @@ const Register = () => {
 
                     {/* Full Name */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className={LABEL_CLASS}>
                             Full Name
                         </label>
 
@@ -155,14 +150,11 @@ const Register = () => {
                             onChange={(e) => setFullName(e.target.value)}
                             placeholder="Enter your full name"
                             autoComplete="name"
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.fullName
-                                ? "border-red-500"
-                                : "border-gray-300"
-                                }`}
+                            className={`form-control ${errors.fullName ? "border-red-500 hover:border-red-500 focus:border-red-500 focus:ring-red-100" : ""}`}
                         />
 
                         {errors.fullName && (
-                            <p className="text-red-500 text-sm mt-1">
+                            <p className="mt-2 text-[13px] font-medium text-red-600">
                                 {errors.fullName}
                             </p>
                         )}
@@ -170,7 +162,7 @@ const Register = () => {
 
                     {/* Email */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className={LABEL_CLASS}>
                             Email
                         </label>
 
@@ -180,14 +172,11 @@ const Register = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter your email"
                             autoComplete="email"
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email
-                                ? "border-red-500"
-                                : "border-gray-300"
-                                }`}
+                            className={`form-control ${errors.email ? "border-red-500 hover:border-red-500 focus:border-red-500 focus:ring-red-100" : ""}`}
                         />
 
                         {errors.email && (
-                            <p className="text-red-500 text-sm mt-1">
+                            <p className="mt-2 text-[13px] font-medium text-red-600">
                                 {errors.email}
                             </p>
                         )}
@@ -195,7 +184,7 @@ const Register = () => {
 
                     {/* Password */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className={LABEL_CLASS}>
                             Password
                         </label>
 
@@ -206,23 +195,20 @@ const Register = () => {
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="Create a password"
                                 autoComplete="new-password"
-                                className={`w-full px-3 py-2 pr-16 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.password
-                                    ? "border-red-500"
-                                    : "border-gray-300"
-                                    }`}
+                                className={`form-control pr-16 ${errors.password ? "border-red-500 hover:border-red-500 focus:border-red-500 focus:ring-red-100" : ""}`}
                             />
 
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-2 text-sm text-gray-600 hover:text-gray-800"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-600 hover:text-slate-900"
                             >
                                 {showPassword ? "Hide" : "Show"}
                             </button>
                         </div>
 
                         {errors.password && (
-                            <p className="text-red-500 text-sm mt-1">
+                            <p className="mt-2 text-[13px] font-medium text-red-600">
                                 {errors.password}
                             </p>
                         )}
@@ -230,7 +216,7 @@ const Register = () => {
 
                     {/* Confirm Password */}
                     <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className={LABEL_CLASS}>
                             Confirm Password
                         </label>
 
@@ -241,10 +227,7 @@ const Register = () => {
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 placeholder="Re-enter your password"
                                 autoComplete="new-password"
-                                className={`w-full px-3 py-2 pr-16 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.confirmPassword
-                                    ? "border-red-500"
-                                    : "border-gray-300"
-                                    }`}
+                                className={`form-control pr-16 ${errors.confirmPassword ? "border-red-500 hover:border-red-500 focus:border-red-500 focus:ring-red-100" : ""}`}
                             />
 
                             <button
@@ -252,14 +235,14 @@ const Register = () => {
                                 onClick={() =>
                                     setShowConfirmPassword(!showConfirmPassword)
                                 }
-                                className="absolute right-3 top-2 text-sm text-gray-600 hover:text-gray-800"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-600 hover:text-slate-900"
                             >
                                 {showConfirmPassword ? "Hide" : "Show"}
                             </button>
                         </div>
 
                         {errors.confirmPassword && (
-                            <p className="text-red-500 text-sm mt-1">
+                            <p className="mt-2 text-[13px] font-medium text-red-600">
                                 {errors.confirmPassword}
                             </p>
                         )}

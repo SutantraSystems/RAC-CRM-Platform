@@ -77,8 +77,3 @@ export const deleteStudentReminder = (reminderId) => {
 export const getReminderNotifications = () => {
   return axiosInstance.get(`${STUDENTS_URL}/reminders/notifications/`);
 };
-
-// ---- Activity ----
-export const getStudentActivity = (studentId) => {
-  return axiosInstance.get(`${STUDENTS_URL}/${studentId}/activity/`);
-};
