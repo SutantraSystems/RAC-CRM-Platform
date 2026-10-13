@@ -107,7 +107,7 @@ class UpdateProfileSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=150)
 
     def validate_full_name(self, value):
-        # Collapse extra spaces so "Merlyn   Deena" is stored as "Merlyn Deena".
+   
         value = " ".join(value.split())
 
         if not value:

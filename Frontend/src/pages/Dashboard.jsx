@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Filter, X, Users, UserX, ThumbsUp, HelpCircle, ListChecks, FileText, Send,
   Wallet, BadgeCheck, CalendarClock, Star, PhoneOff, PhoneMissed,
@@ -37,8 +37,13 @@ const DEFAULT_DATE_FILTERS = {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [dateFilters, setDateFilters] = useState(DEFAULT_DATE_FILTERS);
+  const restoredFilters = location.state?.dashboardFilters || null;
+
+  const [dateFilters, setDateFilters] = useState(
+    restoredFilters ? { ...DEFAULT_DATE_FILTERS, ...restoredFilters } : DEFAULT_DATE_FILTERS
+  );
   const [studentCount, setStudentCount] = useState(0);
   const [statusSummary, setStatusSummary] = useState({});
   // Status the cards are currently filtered by (set when Apply Filter runs).
@@ -85,7 +90,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchDashboardData(DEFAULT_DATE_FILTERS);
+    fetchDashboardData(restoredFilters ? { ...DEFAULT_DATE_FILTERS, ...restoredFilters } : DEFAULT_DATE_FILTERS);
   }, []);
 
   const handleFilterChange = (key, value) => {
@@ -95,7 +100,13 @@ export default function Dashboard() {
     }));
   };
 
+  const handleApplyFilters = () => {
+    navigate(location.pathname, { replace: true, state: null });
+    fetchDashboardData();
+  };
+
   const handleClearFilters = () => {
+    navigate(location.pathname, { replace: true, state: null });
     setDateFilters(DEFAULT_DATE_FILTERS);
     fetchDashboardData(DEFAULT_DATE_FILTERS);
   };
@@ -117,7 +128,11 @@ export default function Dashboard() {
     }
 
     const query = params.toString();
-    navigate(query ? `/students?${query}` : "/students");
+    navigate(query ? `/students?${query}` : "/students", {
+      state: {
+        dashboardFilters: { country: appliedCountry, year: appliedYear, status: appliedStatus },
+      },
+    });
   };
 
   const kpiCards = appliedStatus
@@ -169,7 +184,7 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-end gap-2 sm:items-end lg:shrink-0">
             <button
               className="btn-primary h-[42px] flex-1 lg:flex-none flex items-center justify-center gap-2 whitespace-nowrap"
-              onClick={() => fetchDashboardData()}
+              onClick={handleApplyFilters}
             >
               <Filter size={14} />
               Apply Filter

@@ -2,9 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Bell, BellPlus, Hourglass, AlarmClock, AlertTriangle, CheckCircle2, Edit2, Trash2 } from "lucide-react";
 import ModuleListPage from "../components/common/ModuleListPage";
 import KpiCard from "../components/cards/KpiCard";
-import ReminderFormModal from "../components/ui/ReminderFormModal";
+import ReminderFormModal from "../components/forms/ReminderFormModal";
 import StatusBadge from "../components/ui/StatusBadge";
-import ConfirmDeleteModal from "../components/common/ConfirmDeleteModal";
 import useToast from "../hooks/useToast";
 import { reminderHistoryApi } from "../services/reminderHistoryApi";
 import {
@@ -105,8 +104,6 @@ function SummaryCards({ filters, reloadKey, refreshKey }) {
 export default function ReminderHistory() {
   const { setToast, toastElement } = useToast();
   const [modal, setModal] = useState(null); // { mode: "create" | "edit", row }
-  const [toDelete, setToDelete] = useState(null);
-  const [deleting, setDeleting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = () => {
@@ -115,15 +112,15 @@ export default function ReminderHistory() {
   };
 
   // Completed reminders can only be viewed, re-set as a new reminder, or deleted.
-  const rowActions = (row) =>
+  const rowActions = (row, { requestDelete }) =>
     row.status === "completed"
       ? [
           { key: "new", title: "Set New Reminder", icon: BellPlus, tone: "edit", onClick: (r) => setModal({ mode: "create", row: r }) },
-          { key: "delete", title: "Delete", icon: Trash2, tone: "delete", onClick: setToDelete },
+          { key: "delete", title: "Delete", icon: Trash2, tone: "delete", onClick: requestDelete },
         ]
       : [
           { key: "edit", title: "Edit", icon: Edit2, tone: "edit", onClick: (r) => setModal({ mode: "edit", row: r }) },
-          { key: "delete", title: "Delete", icon: Trash2, tone: "delete", onClick: setToDelete },
+          { key: "delete", title: "Delete", icon: Trash2, tone: "delete", onClick: requestDelete },
         ];
 
   // Errors are rethrown so the modal shows them inline.
@@ -141,21 +138,6 @@ export default function ReminderHistory() {
     refresh();
   };
 
-  const handleConfirmDelete = async () => {
-    try {
-      setDeleting(true);
-      await deleteStudentReminder(toDelete.id);
-      setToDelete(null);
-      setToast({ type: "success", message: "Reminder deleted." });
-      refresh();
-    } catch (error) {
-      console.error("Delete failed:", error);
-      setToast({ type: "error", message: apiErrorMessage(error, "Failed to delete reminder.") });
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   return (
     <>
       {toastElement}
@@ -171,6 +153,10 @@ export default function ReminderHistory() {
         refreshKey={refreshKey}
         showTotal={false}
         onDataChanged={refresh}
+        getName={(row) => `"${row.title || "this reminder"}" for ${row.student_name || "this student"}`}
+        removeRecord={(row) => deleteStudentReminder(row.id)}
+        deleteSuccessMessage="Reminder deleted."
+        getDeleteErrorMessage={(error) => apiErrorMessage(error, "Failed to delete reminder.")}
         rowActions={rowActions}
         getRowPath={(row) => `/students/${row.student}`}
         renderAboveTable={(props) => <SummaryCards {...props} refreshKey={refreshKey} />}
@@ -184,16 +170,6 @@ export default function ReminderHistory() {
           onSubmit={handleSubmit}
         />
       )}
-
-      <ConfirmDeleteModal
-        open={Boolean(toDelete)}
-        title="Delete Reminder?"
-        message={`Are you sure you want to delete "${toDelete?.title || "this reminder"}" for ${toDelete?.student_name || "this student"}?`}
-        confirmLabel="Delete Reminder"
-        loading={deleting}
-        onCancel={() => !deleting && setToDelete(null)}
-        onConfirm={handleConfirmDelete}
-      />
     </>
   );
 }

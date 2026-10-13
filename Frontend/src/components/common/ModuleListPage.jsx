@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle2, Trash2 } from "lucide-react";
 import useListQuery from "../../hooks/useListQuery";
+import useBulkSelection from "../../hooks/useBulkSelection";
+import useSingleDelete from "../../hooks/useSingleDelete";
 import ListFilters from "./ListFilters";
 import DataTable from "./DataTable";
 import FormModal from "./FormModal";
@@ -27,7 +29,10 @@ export default function ModuleListPage({
   rowActions,       // optional per-row action buttons, see DataTable
   refreshKey = 0,   // bump to reload the list after the parent changes data
   showTotal = true, // false hides the "N total records" line
-  onDataChanged,    // optional; called after a bulk delete so the parent can refresh (cards, bell)
+  onDataChanged,    // optional; called after a delete so the parent can refresh (cards, bell)
+  removeRecord,     // optional (row) => Promise; module-specific single delete, defaults to api.remove(row.id)
+  deleteSuccessMessage, // optional text for the single-delete success toast
+  getDeleteErrorMessage, // optional (error) => text for the single-delete error toast
 }) {
   const canEdit = Boolean(FormComponent);
   const navigate = useNavigate();
@@ -47,6 +52,7 @@ export default function ModuleListPage({
     useListQuery(filterKeys, numericKeys);
 
   const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const { setToast, toastElement } = useToast();
@@ -54,18 +60,10 @@ export default function ModuleListPage({
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
 
-  const [toDelete, setToDelete] = useState(null);
-  const [deleting, setDeleting] = useState(false);
-
   const requestId = useRef(0);
 
   // Row checkboxes + bulk delete appear when the api supports it (same behaviour as Students).
   const selectable = Boolean(api.bulkRemove);
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [allMatchingSelected, setAllMatchingSelected] = useState(false);
-  const [selectingAll, setSelectingAll] = useState(false);
-  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
-  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const buildParams = (pageNumber, filtersData) => {
     const params = { page: pageNumber, page_size: PAGE_SIZE };
@@ -82,6 +80,9 @@ export default function ModuleListPage({
 
   const fetchRows = async (pageNumber = 1, filtersData = {}) => {
     const current = ++requestId.current;
+    let retrying = false;
+
+    setLoading(true);
 
     try {
       const response = await api.list(buildParams(pageNumber, filtersData));
@@ -93,11 +94,15 @@ export default function ModuleListPage({
     } catch (error) {
       // Page in the URL no longer exists -> fall back to page 1.
       if (error.response?.status === 404 && pageNumber > 1) {
+        retrying = true; // the page-1 refetch keeps the loading state on
         writeParams(1, filtersData);
         return;
       }
       console.error(`Error loading ${plural}:`, error);
       setToast({ type: "error", message: `Could not load ${plural.toLowerCase()}.` });
+    } finally {
+      // Ignore results of superseded requests; only the latest one ends loading.
+      if (current === requestId.current && !retrying) setLoading(false);
     }
   };
 
@@ -105,44 +110,25 @@ export default function ModuleListPage({
     fetchRows(page, filters);
   }, [page, filters, reloadKey, refreshKey]);
 
-  // A new filter set starts with a clean selection.
-  useEffect(() => {
-    setSelectedIds(new Set());
-    setAllMatchingSelected(false);
-  }, [filters, reloadKey]);
-
-  const clearSelection = () => {
-    setSelectedIds(new Set());
-    setAllMatchingSelected(false);
-  };
-
-  const handleToggleSelect = (id) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-    setAllMatchingSelected(false);
-  };
-
-  const handleToggleSelectAll = (checked) => {
-    const ids = rows.map((row) => row.id);
-
-    if (!checked && allMatchingSelected) {
-      clearSelection();
-      return;
-    }
-
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      ids.forEach((id) => (checked ? next.add(id) : next.delete(id)));
-      return next;
-    });
-  };
-
-  const handleSelectAllMatching = async () => {
-    try {
-      setSelectingAll(true);
+  const {
+    selectedIds,
+    selectedCount,
+    allMatchingSelected,
+    selectingAll,
+    showSelectAllMatching,
+    showBulkConfirm,
+    setShowBulkConfirm,
+    bulkDeleting,
+    toggleSelect,
+    toggleSelectAll,
+    selectAllMatching,
+    clearSelection,
+    confirmBulkDelete,
+  } = useBulkSelection({
+    rows,
+    total,
+    resetOn: [filters, reloadKey],
+    fetchAllIds: async () => {
       const params = {};
       filterKeys.forEach((key) => {
         const value = filters[key];
@@ -150,26 +136,14 @@ export default function ModuleListPage({
       });
 
       const response = await api.ids(params);
-      setSelectedIds(new Set(response.data.ids));
-      setAllMatchingSelected(true);
-    } catch (error) {
+      return response.data.ids;
+    },
+    bulkRemove: (ids) => api.bulkRemove(ids),
+    onSelectAllError: (error) => {
       console.error(`Failed to select all ${plural}:`, error);
       setToast({ type: "error", message: `Could not select all ${plural.toLowerCase()}. Please try again.` });
-    } finally {
-      setSelectingAll(false);
-    }
-  };
-
-  const handleConfirmBulkDelete = async () => {
-    const ids = Array.from(selectedIds);
-
-    try {
-      setBulkDeleting(true);
-      await api.bulkRemove(ids);
-
-      setShowBulkConfirm(false);
-      clearSelection();
-
+    },
+    onDeleted: async (ids) => {
       // Parent refresh bumps refreshKey (reloads the list); otherwise reload here.
       if (onDataChanged) onDataChanged();
       else await fetchRows(page, filters);
@@ -178,20 +152,40 @@ export default function ModuleListPage({
         type: "success",
         message: `${ids.length} ${ids.length === 1 ? singular.toLowerCase() : plural.toLowerCase()} deleted successfully.`,
       });
-    } catch (error) {
+    },
+    onDeleteError: (error) => {
       console.error("Bulk delete failed:", error);
       setToast({
         type: "error",
         message: `Failed to delete selected ${plural.toLowerCase()}. Please try again.`,
       });
-    } finally {
-      setBulkDeleting(false);
-    }
-  };
+    },
+  });
 
-  const selectedCount = selectedIds.size;
-  const allOnPageSelected = rows.length > 0 && rows.every((row) => selectedIds.has(row.id));
-  const showSelectAllMatching = allOnPageSelected && !allMatchingSelected && total > rows.length;
+  const {
+    target: toDelete,
+    deleting,
+    requestDelete,
+    cancelDelete,
+    confirmDelete,
+  } = useSingleDelete({
+    remove: removeRecord || ((row) => api.remove(row.id)),
+    onDeleted: async () => {
+      if (onDataChanged) onDataChanged();
+      else await fetchRows(page, filters);
+
+      setToast({ type: "success", message: deleteSuccessMessage || `${singular} deleted successfully.` });
+    },
+    onError: (error) => {
+      console.error("Delete failed:", error);
+      setToast({
+        type: "error",
+        message: getDeleteErrorMessage
+          ? getDeleteErrorMessage(error)
+          : `Failed to delete ${singular.toLowerCase()}. Please try again.`,
+      });
+    },
+  });
 
   const handleAdd = () => {
     setSelected(null);
@@ -245,26 +239,6 @@ export default function ModuleListPage({
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!toDelete) return;
-
-    try {
-      setDeleting(true);
-      await api.remove(toDelete.id);
-      setToDelete(null);
-      await fetchRows(page, filters);
-      setToast({ type: "success", message: `${singular} deleted successfully.` });
-    } catch (error) {
-      console.error("Delete failed:", error);
-      setToast({
-        type: "error",
-        message: `Failed to delete ${singular.toLowerCase()}. Please try again.`,
-      });
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   return (
     <div className="space-y-2">
       {toastElement}
@@ -292,7 +266,7 @@ export default function ModuleListPage({
             {showSelectAllMatching && (
               <button
                 type="button"
-                onClick={handleSelectAllMatching}
+                onClick={selectAllMatching}
                 disabled={selectingAll}
                 className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50"
               >
@@ -326,6 +300,7 @@ export default function ModuleListPage({
         addLabel={addLabel}
         columns={columns}
         data={rows}
+        loading={loading}
         page={page}
         total={total}
         totalPages={totalPages}
@@ -333,13 +308,14 @@ export default function ModuleListPage({
         setPage={setPage}
         onAdd={canEdit ? handleAdd : undefined}
         onEdit={canEdit ? handleEdit : undefined}
-        onDelete={canEdit ? setToDelete : undefined}
+        onDelete={canEdit ? requestDelete : undefined}
         onRowClick={handleRowClick}
-        rowActions={rowActions}
+        rowActions={rowActions ? (row) => rowActions(row, { requestDelete }) : undefined}
+        getRowLabel={getName}
         showTotal={showTotal}
         selectedIds={selectable ? selectedIds : undefined}
-        onToggleSelect={handleToggleSelect}
-        onToggleSelectAll={handleToggleSelectAll}
+        onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAll}
       />
 
       {selectable && (
@@ -350,7 +326,7 @@ export default function ModuleListPage({
           confirmLabel={`Delete ${plural}`}
           loading={bulkDeleting}
           onCancel={() => !bulkDeleting && setShowBulkConfirm(false)}
-          onConfirm={handleConfirmBulkDelete}
+          onConfirm={confirmBulkDelete}
         />
       )}
 
@@ -367,17 +343,15 @@ export default function ModuleListPage({
         </FormModal>
       )}
 
-      {canEdit && (
-        <ConfirmDeleteModal
-          open={Boolean(toDelete)}
-          title={`Delete ${singular}?`}
-          message={`Are you sure you want to delete ${toDelete ? getName(toDelete) : ""}?`}
-          confirmLabel={`Delete ${singular}`}
-          loading={deleting}
-          onCancel={() => !deleting && setToDelete(null)}
-          onConfirm={handleConfirmDelete}
-        />
-      )}
+      <ConfirmDeleteModal
+        open={Boolean(toDelete)}
+        title={`Delete ${singular}?`}
+        message={`Are you sure you want to delete ${toDelete && getName ? getName(toDelete) : ""}?`}
+        confirmLabel={`Delete ${singular}`}
+        loading={deleting}
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

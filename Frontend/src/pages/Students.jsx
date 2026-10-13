@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   getStudents,
@@ -12,8 +12,9 @@ import StudentFilters from "../components/filters/StudentFilters";
 import StudentsTable from "../components/tables/StudentsTable";
 import StudentForm from "../components/forms/StudentForm";
 import FormModal from "../components/common/FormModal";
-import { CheckCircle2, Trash2 } from "lucide-react";
+import { CheckCircle2, Trash2, ArrowLeft } from "lucide-react";
 import useListQuery from "../hooks/useListQuery";
+import useBulkSelection from "../hooks/useBulkSelection";
 import { PAGE_SIZE, getErrorMessage } from "../config/crmConfig";
 import ConfirmDeleteModal from "../components/common/ConfirmDeleteModal";
 import useToast from "../hooks/useToast";
@@ -25,6 +26,8 @@ export default function Students() {
   const location = useLocation();
 
   const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const requestId = useRef(0);
 
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -37,20 +40,9 @@ export default function Students() {
   const { page, filters, reloadKey, setPage, writeParams, applyFilters, clearFilters } =
     useListQuery(FILTER_KEYS, ["year"]);
 
-  // Bulk selection state
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [allMatchingSelected, setAllMatchingSelected] =
-    useState(false);
-  const [selectingAllMatching, setSelectingAllMatching] =
-    useState(false);
-
-  // Delete confirmation state
-  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] =
-    useState(false);
+  // Single-student delete state
   const [studentToDelete, setStudentToDelete] =
     useState(null);
-  const [bulkDeleting, setBulkDeleting] =
-    useState(false);
   const [deletingStudent, setDeletingStudent] =
     useState(false);
 
@@ -71,11 +63,118 @@ export default function Students() {
     ...buildFilterOnlyParams(filtersData),
   });
 
+  const {
+    selectedIds,
+    selectedCount,
+    allMatchingSelected,
+    selectingAll: selectingAllMatching,
+    showSelectAllMatching: showSelectAllMatchingBanner,
+    showBulkConfirm: showBulkDeleteConfirm,
+    setShowBulkConfirm: setShowBulkDeleteConfirm,
+    bulkDeleting,
+    toggleSelect: handleToggleSelect,
+    toggleSelectAll: handleToggleSelectAll,
+    selectAllMatching: handleSelectAllMatching,
+    clearSelection: handleClearSelection,
+    confirmBulkDelete: handleConfirmBulkDelete,
+  } = useBulkSelection({
+    rows: students,
+    total,
+    resetOn: [filters, reloadKey],
+    fetchAllIds: async () => {
+      const response = await getStudentIds(buildFilterOnlyParams(filters));
+      return response.data.ids;
+    },
+    bulkRemove: deleteStudents,
+    onSelectAllError: (error) => {
+      console.error(
+        "Failed to select all matching students:",
+        error
+      );
+
+      setToast({
+        type: "error",
+        message:
+          "Could not select all students. Please try again.",
+      });
+    },
+    onDeleted: async (ids) => {
+      const countResponse =
+        await getStudents(
+          buildParams(1, filters)
+        );
+
+      const { total_pages: newTotalPages } = countResponse.data;
+
+      const targetPage = Math.min(
+        page,
+        Math.max(newTotalPages, 1)
+      );
+
+      let refreshed =
+        countResponse.data;
+
+      if (targetPage !== 1) {
+        const pageResponse =
+          await getStudents(
+            buildParams(
+              targetPage,
+              filters
+            )
+          );
+
+        refreshed =
+          pageResponse.data;
+      }
+
+      setStudents(
+        refreshed.data
+      );
+
+      setTotal(
+        refreshed.total
+      );
+
+      setPage(
+        refreshed.page
+      );
+
+      setTotalPages(
+        refreshed.total_pages
+      );
+
+      setToast({
+        type: "success",
+        message: `${ids.length} ${ids.length === 1
+          ? "student"
+          : "students"
+          } deleted successfully.`,
+      });
+    },
+    onDeleteError: (error) => {
+      console.error(
+        "Bulk delete failed:",
+        error
+      );
+
+      setToast({
+        type: "error",
+        message:
+          "Failed to delete selected students. Please try again.",
+      });
+    },
+  });
+
   // Fetch students
   const fetchStudents = async (
     pageNumber = 1,
     filtersData = {}
   ) => {
+    const current = ++requestId.current;
+    let retrying = false;
+
+    setLoading(true);
+
     try {
       const params = buildParams(
         pageNumber,
@@ -90,6 +189,7 @@ export default function Students() {
     } catch (error) {
       // The page in the URL no longer exists (edited URL, or the last row of the last page was deleted): fall back to page 1.
       if (error.response?.status === 404 && pageNumber > 1) {
+        retrying = true; // the page-1 refetch keeps the loading state on
         writeParams(1, filtersData);
         return;
       }
@@ -98,6 +198,9 @@ export default function Students() {
         "Error loading students:",
         error
       );
+    } finally {
+      // Only the latest request ends the loading state.
+      if (current === requestId.current && !retrying) setLoading(false);
     }
   };
 
@@ -105,12 +208,6 @@ export default function Students() {
   useEffect(() => {
     fetchStudents(page, filters);
   }, [page, filters, reloadKey]);
-
-  // Clear selection when filters change
-  useEffect(() => {
-    setSelectedIds(new Set());
-    setAllMatchingSelected(false);
-  }, [filters, reloadKey]);
 
   // Handle filter apply (a new filter set always starts on page 1)
   const handleFilter = (newFilters) => applyFilters(newFilters);
@@ -133,7 +230,10 @@ export default function Students() {
   // Navigate to Student Details `from` remembers this exact list URL (page + filters) so that "Back to Students" can return to it.
   const handleViewDetails = (id) => {
     navigate(`/students/${id}`, {
-      state: { from: `${location.pathname}${location.search}` },
+      state: {
+        from: `${location.pathname}${location.search}`,
+        dashboardFilters: location.state?.dashboardFilters,
+      },
     });
   };
 
@@ -227,186 +327,6 @@ export default function Students() {
     }
   };
 
-  // Toggle a single row selection
-  const handleToggleSelect = (id) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-
-      return next;
-    });
-
-    setAllMatchingSelected(false);
-  };
-
-  // Select/deselect all students on current page
-  const handleToggleSelectAll = (
-    checked
-  ) => {
-    const pageIds = students.map(
-      (student) => student.id
-    );
-
-    if (!checked) {
-      if (allMatchingSelected) {
-        setSelectedIds(new Set());
-        setAllMatchingSelected(false);
-      } else {
-        setSelectedIds((prev) => {
-          const next = new Set(prev);
-
-          pageIds.forEach((id) => {
-            next.delete(id);
-          });
-
-          return next;
-        });
-      }
-
-      return;
-    }
-
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-
-      pageIds.forEach((id) => {
-        next.add(id);
-      });
-
-      return next;
-    });
-  };
-
-  // Select all matching students
-  const handleSelectAllMatching =
-    async () => {
-      try {
-        setSelectingAllMatching(true);
-
-        const response =
-          await getStudentIds(
-            buildFilterOnlyParams(filters)
-          );
-
-        setSelectedIds(
-          new Set(response.data.ids)
-        );
-
-        setAllMatchingSelected(true);
-      } catch (error) {
-        console.error(
-          "Failed to select all matching students:",
-          error
-        );
-
-        setToast({
-          type: "error",
-          message:
-            "Could not select all students. Please try again.",
-        });
-      } finally {
-        setSelectingAllMatching(false);
-      }
-    };
-
-  // Clear selection
-  const handleClearSelection = () => {
-    setSelectedIds(new Set());
-    setAllMatchingSelected(false);
-  };
-
-  // Bulk delete
-  const handleConfirmBulkDelete =
-    async () => {
-      const ids =
-        Array.from(selectedIds);
-
-      try {
-        setBulkDeleting(true);
-
-        await deleteStudents(ids);
-
-        setShowBulkDeleteConfirm(
-          false
-        );
-
-        setSelectedIds(new Set());
-        setAllMatchingSelected(false);
-
-        const countResponse =
-          await getStudents(
-            buildParams(1, filters)
-          );
-
-        const { total_pages: newTotalPages } = countResponse.data;
-
-        const targetPage = Math.min(
-          page,
-          Math.max(newTotalPages, 1)
-        );
-
-        let refreshed =
-          countResponse.data;
-
-        if (targetPage !== 1) {
-          const pageResponse =
-            await getStudents(
-              buildParams(
-                targetPage,
-                filters
-              )
-            );
-
-          refreshed =
-            pageResponse.data;
-        }
-
-        setStudents(
-          refreshed.data
-        );
-
-        setTotal(
-          refreshed.total
-        );
-
-        setPage(
-          refreshed.page
-        );
-
-        setTotalPages(
-          refreshed.total_pages
-        );
-
-        setToast({
-          type: "success",
-          message: `${ids.length} ${ids.length === 1
-            ? "student"
-            : "students"
-            } deleted successfully.`,
-        });
-      } catch (error) {
-        console.error(
-          "Bulk delete failed:",
-          error
-        );
-
-        setToast({
-          type: "error",
-          message:
-            "Failed to delete selected students. Please try again.",
-        });
-
-        // Keep selection and modal open
-      } finally {
-        setBulkDeleting(false);
-      }
-    };
-
   // Close delete confirmation
   const handleCloseDeleteConfirm = () => {
     if (bulkDeleting || deletingStudent) {
@@ -417,29 +337,26 @@ export default function Students() {
     setStudentToDelete(null);
   };
 
-  const selectedCount =
-    selectedIds.size;
+  const dashboardFilters = location.state?.dashboardFilters;
 
-  const pageIds = students.map(
-    (student) => student.id
-  );
-
-  const allOnPageSelected =
-    pageIds.length > 0 &&
-    pageIds.every((id) =>
-      selectedIds.has(id)
-    );
-
-  const showSelectAllMatchingBanner =
-    allOnPageSelected &&
-    !allMatchingSelected &&
-    total > pageIds.length;
+  const handleBackToDashboard = () =>
+    navigate("/dashboard", { state: { dashboardFilters } });
 
   return (
     <div className="space-y-2">
 
       {/* Toast */}
       {toastElement}
+
+      {dashboardFilters && (
+        <button
+          onClick={handleBackToDashboard}
+          className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700"
+        >
+          <ArrowLeft size={15} />
+          Back to Dashboard
+        </button>
+      )}
 
       {/* Filters */}
       <StudentFilters
@@ -508,6 +425,7 @@ export default function Students() {
       {/* Students Table */}
       <StudentsTable
         data={students}
+        loading={loading}
         page={page}
         total={total}
         totalPages={totalPages}

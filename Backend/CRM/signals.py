@@ -4,8 +4,6 @@ from django.dispatch import receiver
 
 from .models import StudentDocument
 
-# Remove the physical file from storage whenever a StudentDocument row is deleted
-# (single delete, deleting a student, or bulk delete).
 @receiver(post_delete, sender=StudentDocument)
 def delete_document_file(sender, instance, **kwargs):
   
@@ -19,7 +17,6 @@ def delete_document_file(sender, instance, **kwargs):
         try:
             storage.delete(name)
         except Exception:
-            # Never break the request because a file was already missing.
             pass
 
     # Only delete the file once the DB delete has actually been committed.
