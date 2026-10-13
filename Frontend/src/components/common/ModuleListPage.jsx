@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { CheckCircle2, Trash2 } from "lucide-react";
 import useListQuery from "../../hooks/useListQuery";
 import ListFilters from "./ListFilters";
 import DataTable from "./DataTable";
 import FormModal from "./FormModal";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
-import Toast from "../ui/Toast";
 import { PAGE_SIZE, getErrorMessage, getFieldErrors } from "../../config/crmConfig";
+import useToast from "../../hooks/useToast";
 
 
 export default function ModuleListPage({
@@ -18,13 +19,25 @@ export default function ModuleListPage({
   addLabel,         
   filterFields,     
   columns,          
-  FormComponent,  
+  FormComponent,    // omit for a read-only list (no add / edit / delete)
   getName,          
+  clearLabel,
+  getRowPath,       // where a row click goes; defaults to `${basePath}/${row.id}`
+  renderAboveTable, // optional block between the filters and the table (e.g. cards)
+  rowActions,       // optional per-row action buttons, see DataTable
+  refreshKey = 0,   // bump to reload the list after the parent changes data
+  showTotal = true, // false hides the "N total records" line
+  onDataChanged,    // optional; called after a bulk delete so the parent can refresh (cards, bell)
 }) {
+  const canEdit = Boolean(FormComponent);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const filterKeys = useMemo(() => filterFields.map((f) => f.key), [filterFields]);
+  // Date-range fields own three URL keys (range + from + to).
+  const filterKeys = useMemo(
+    () => filterFields.flatMap((f) => [f.key, f.fromKey, f.toKey].filter(Boolean)),
+    [filterFields]
+  );
   const numericKeys = useMemo(
     () => filterFields.filter((f) => f.type === "year").map((f) => f.key),
     [filterFields]
@@ -36,7 +49,7 @@ export default function ModuleListPage({
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [toast, setToast] = useState(null);
+  const { setToast, toastElement } = useToast();
 
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -45,6 +58,14 @@ export default function ModuleListPage({
   const [deleting, setDeleting] = useState(false);
 
   const requestId = useRef(0);
+
+  // Row checkboxes + bulk delete appear when the api supports it (same behaviour as Students).
+  const selectable = Boolean(api.bulkRemove);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [allMatchingSelected, setAllMatchingSelected] = useState(false);
+  const [selectingAll, setSelectingAll] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const buildParams = (pageNumber, filtersData) => {
     const params = { page: pageNumber, page_size: PAGE_SIZE };
@@ -82,7 +103,95 @@ export default function ModuleListPage({
 
   useEffect(() => {
     fetchRows(page, filters);
-  }, [page, filters, reloadKey]);
+  }, [page, filters, reloadKey, refreshKey]);
+
+  // A new filter set starts with a clean selection.
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setAllMatchingSelected(false);
+  }, [filters, reloadKey]);
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setAllMatchingSelected(false);
+  };
+
+  const handleToggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+    setAllMatchingSelected(false);
+  };
+
+  const handleToggleSelectAll = (checked) => {
+    const ids = rows.map((row) => row.id);
+
+    if (!checked && allMatchingSelected) {
+      clearSelection();
+      return;
+    }
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => (checked ? next.add(id) : next.delete(id)));
+      return next;
+    });
+  };
+
+  const handleSelectAllMatching = async () => {
+    try {
+      setSelectingAll(true);
+      const params = {};
+      filterKeys.forEach((key) => {
+        const value = filters[key];
+        if (value !== "" && value !== null && value !== undefined && value !== "all") params[key] = value;
+      });
+
+      const response = await api.ids(params);
+      setSelectedIds(new Set(response.data.ids));
+      setAllMatchingSelected(true);
+    } catch (error) {
+      console.error(`Failed to select all ${plural}:`, error);
+      setToast({ type: "error", message: `Could not select all ${plural.toLowerCase()}. Please try again.` });
+    } finally {
+      setSelectingAll(false);
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+
+    try {
+      setBulkDeleting(true);
+      await api.bulkRemove(ids);
+
+      setShowBulkConfirm(false);
+      clearSelection();
+
+      // Parent refresh bumps refreshKey (reloads the list); otherwise reload here.
+      if (onDataChanged) onDataChanged();
+      else await fetchRows(page, filters);
+
+      setToast({
+        type: "success",
+        message: `${ids.length} ${ids.length === 1 ? singular.toLowerCase() : plural.toLowerCase()} deleted successfully.`,
+      });
+    } catch (error) {
+      console.error("Bulk delete failed:", error);
+      setToast({
+        type: "error",
+        message: `Failed to delete selected ${plural.toLowerCase()}. Please try again.`,
+      });
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const selectedCount = selectedIds.size;
+  const allOnPageSelected = rows.length > 0 && rows.every((row) => selectedIds.has(row.id));
+  const showSelectAllMatching = allOnPageSelected && !allMatchingSelected && total > rows.length;
 
   const handleAdd = () => {
     setSelected(null);
@@ -100,7 +209,7 @@ export default function ModuleListPage({
   };
 
   const handleRowClick = (row) => {
-    navigate(`${basePath}/${row.id}`, {
+    navigate(getRowPath ? getRowPath(row) : `${basePath}/${row.id}`, {
       state: { from: `${location.pathname}${location.search}` },
     });
   };
@@ -158,16 +267,58 @@ export default function ModuleListPage({
 
   return (
     <div className="space-y-2">
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
+      {toastElement}
 
       <ListFilters
         fields={filterFields}
         appliedFilters={filters}
         onFilter={applyFilters}
         onClear={clearFilters}
+        clearLabel={clearLabel}
       />
+
+      {renderAboveTable?.({ filters, reloadKey })}
+
+      {selectable && selectedCount > 0 && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-primary-50 border border-primary-100 rounded-2xl px-3 sm:px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 text-primary-700 font-medium text-sm">
+              <CheckCircle2 size={16} />
+              {allMatchingSelected
+                ? `All ${selectedCount} ${plural} Selected`
+                : `${selectedCount} ${selectedCount === 1 ? singular : plural} Selected`}
+            </div>
+
+            {showSelectAllMatching && (
+              <button
+                type="button"
+                onClick={handleSelectAllMatching}
+                disabled={selectingAll}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                {selectingAll ? "Selecting..." : `Select all ${total}`}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+            >
+              Clear selection
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowBulkConfirm(true)}
+            className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-danger bg-red-50 hover:bg-red-100 transition-colors"
+          >
+            <Trash2 size={15} />
+            Delete Selected
+          </button>
+        </div>
+      )}
 
       <DataTable
         title={title}
@@ -180,13 +331,30 @@ export default function ModuleListPage({
         totalPages={totalPages}
         pageSize={PAGE_SIZE}
         setPage={setPage}
-        onAdd={handleAdd}
-        onEdit={handleEdit}
-        onDelete={setToDelete}
+        onAdd={canEdit ? handleAdd : undefined}
+        onEdit={canEdit ? handleEdit : undefined}
+        onDelete={canEdit ? setToDelete : undefined}
         onRowClick={handleRowClick}
+        rowActions={rowActions}
+        showTotal={showTotal}
+        selectedIds={selectable ? selectedIds : undefined}
+        onToggleSelect={handleToggleSelect}
+        onToggleSelectAll={handleToggleSelectAll}
       />
 
-      {showForm && (
+      {selectable && (
+        <ConfirmDeleteModal
+          open={showBulkConfirm}
+          title={`Delete ${selectedCount} ${selectedCount === 1 ? singular : plural}?`}
+          message={`Are you sure you want to delete the selected ${plural.toLowerCase()}?`}
+          confirmLabel={`Delete ${plural}`}
+          loading={bulkDeleting}
+          onCancel={() => !bulkDeleting && setShowBulkConfirm(false)}
+          onConfirm={handleConfirmBulkDelete}
+        />
+      )}
+
+      {canEdit && showForm && (
         <FormModal
           title={selected ? `Edit ${singular}` : addLabel}
           onClose={closeForm}
@@ -199,15 +367,17 @@ export default function ModuleListPage({
         </FormModal>
       )}
 
-      <ConfirmDeleteModal
-        open={Boolean(toDelete)}
-        title={`Delete ${singular}?`}
-        message={`Are you sure you want to delete ${toDelete ? getName(toDelete) : ""}?`}
-        confirmLabel={`Delete ${singular}`}
-        loading={deleting}
-        onCancel={() => !deleting && setToDelete(null)}
-        onConfirm={handleConfirmDelete}
-      />
+      {canEdit && (
+        <ConfirmDeleteModal
+          open={Boolean(toDelete)}
+          title={`Delete ${singular}?`}
+          message={`Are you sure you want to delete ${toDelete ? getName(toDelete) : ""}?`}
+          confirmLabel={`Delete ${singular}`}
+          loading={deleting}
+          onCancel={() => !deleting && setToDelete(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
     </div>
   );
 }

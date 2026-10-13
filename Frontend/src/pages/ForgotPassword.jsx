@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import racLogo from "../assets/RAC.png";
 import { checkEmailExists, resetPassword } from "../services/authApi";
-import Toast from "../components/ui/Toast";
+import useToast from "../hooks/useToast";
+import { LABEL_CLASS } from "../components/common/FormField";
 
 const ForgotPassword = () => {
     const navigate = useNavigate();
@@ -16,7 +17,7 @@ const ForgotPassword = () => {
 
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
-    const [toast, setToast] = useState(null);
+    const { setToast, toastElement } = useToast();
     const [noAccount, setNoAccount] = useState(false);
 
     const handleCheckEmail = async (e) => {
@@ -98,13 +99,7 @@ const ForgotPassword = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 px-3 py-6 sm:px-4">
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
+            {toastElement}
 
             <div className="w-full max-w-md bg-white rounded-lg shadow-md p-5 sm:p-8">
                 <div className="flex justify-center mb-6">
@@ -139,16 +134,15 @@ const ForgotPassword = () => {
 
                         <form onSubmit={handleCheckEmail}>
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <label className={LABEL_CLASS}>Email</label>
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="Enter your registered email"
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email ? "border-red-500" : "border-gray-300"
-                                        }`}
+                                    className={`form-control ${errors.email ? "border-red-500 hover:border-red-500 focus:border-red-500 focus:ring-red-100" : ""}`}
                                 />
-                                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                                {errors.email && <p className="mt-2 text-[13px] font-medium text-red-600">{errors.email}</p>}
                             </div>
 
                             <button
@@ -177,50 +171,48 @@ const ForgotPassword = () => {
 
                         <form onSubmit={handleResetPassword}>
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                <label className={LABEL_CLASS}>New Password</label>
                                 <div className="relative">
                                     <input
                                         type={showNewPassword ? "text" : "password"}
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
                                         placeholder="Enter new password"
-                                        className={`w-full px-3 py-2 pr-16 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.newPassword ? "border-red-500" : "border-gray-300"
-                                            }`}
+                                        className={`form-control pr-16 ${errors.newPassword ? "border-red-500 hover:border-red-500 focus:border-red-500 focus:ring-red-100" : ""}`}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowNewPassword(!showNewPassword)}
-                                        className="absolute right-3 top-2 text-sm text-gray-600 hover:text-gray-800"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-600 hover:text-slate-900"
                                     >
                                         {showNewPassword ? "Hide" : "Show"}
                                     </button>
                                 </div>
                                 {errors.newPassword && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.newPassword}</p>
+                                    <p className="mt-2 text-[13px] font-medium text-red-600">{errors.newPassword}</p>
                                 )}
                             </div>
 
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                                <label className={LABEL_CLASS}>Confirm Password</label>
                                 <div className="relative">
                                     <input
                                         type={showConfirmPassword ? "text" : "password"}
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                         placeholder="Re-enter new password"
-                                        className={`w-full px-3 py-2 pr-16 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.confirmPassword ? "border-red-500" : "border-gray-300"
-                                            }`}
+                                        className={`form-control pr-16 ${errors.confirmPassword ? "border-red-500 hover:border-red-500 focus:border-red-500 focus:ring-red-100" : ""}`}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute right-3 top-2 text-sm text-gray-600 hover:text-gray-800"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-600 hover:text-slate-900"
                                     >
                                         {showConfirmPassword ? "Hide" : "Show"}
                                     </button>
                                 </div>
                                 {errors.confirmPassword && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+                                    <p className="mt-2 text-[13px] font-medium text-red-600">{errors.confirmPassword}</p>
                                 )}
                             </div>
 

@@ -25,14 +25,14 @@ export default function Universities() {
     <ModuleListPage
       api={universityApi}
       basePath="/universities"
-      title="Universities"
-      singular="University"
-      plural="Universities"
-      addLabel="Add University"
+      title="Contact List"
+      singular="Contact"
+      plural="Contacts"
+      addLabel="Add Contact"
       filterFields={FILTER_FIELDS}
       columns={COLUMNS}
       FormComponent={UniversityForm}
-      getName={(row) => row.name || "this university"}
+      getName={(row) => row.name || "this contact"}
     />
   );
 }

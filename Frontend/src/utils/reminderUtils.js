@@ -1,4 +1,4 @@
-export const IST_TIMEZONE = "Asia/Kolkata";
+const IST_TIMEZONE = "Asia/Kolkata";
 const IST_OFFSET = "+05:30"; // India has no daylight saving time
 
 export const FUTURE_MESSAGE = "Please select a future date and time.";

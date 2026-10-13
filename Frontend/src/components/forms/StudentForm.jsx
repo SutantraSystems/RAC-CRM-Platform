@@ -168,6 +168,14 @@ export default function StudentForm({
       payload[key] = value;
     });
 
+    // Full name is mandatory: stop here and point the user at the field.
+    if (!payload.full_name) {
+      setFieldErrors({ full_name: "Full name is required" });
+      openSection("personal");
+      setTimeout(() => document.getElementById("full_name")?.focus(), 0);
+      return;
+    }
+
     setSaving(true);
     // onSubmit may resolve to { field: "message" } when the server rejects it.
     const errors = await onSubmit(payload);
@@ -211,7 +219,7 @@ export default function StudentForm({
         onToggle={() => toggleSection("personal")}
         {...progress[0]}
       >
-        <FormField label="Full Name" htmlFor="full_name" error={fieldErrors.full_name}>
+        <FormField label="Full Name" htmlFor="full_name" required error={fieldErrors.full_name}>
           <TextInput
             id="full_name"
             name="full_name"

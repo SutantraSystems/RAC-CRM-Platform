@@ -12,10 +12,11 @@ import StudentFilters from "../components/filters/StudentFilters";
 import StudentsTable from "../components/tables/StudentsTable";
 import StudentForm from "../components/forms/StudentForm";
 import FormModal from "../components/common/FormModal";
-import Toast from "../components/ui/Toast";
 import { CheckCircle2, Trash2 } from "lucide-react";
 import useListQuery from "../hooks/useListQuery";
 import { PAGE_SIZE, getErrorMessage } from "../config/crmConfig";
+import ConfirmDeleteModal from "../components/common/ConfirmDeleteModal";
+import useToast from "../hooks/useToast";
 
 const FILTER_KEYS = ["search", "country", "intake", "year", "status", "source_file"];
 
@@ -30,7 +31,7 @@ export default function Students() {
 
   const [showForm, setShowForm] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [toast, setToast] = useState(null);
+  const { setToast, toastElement } = useToast();
 
   // Page + applied filters live in the URL (shared hook, same as Payments / Universities).
   const { page, filters, reloadKey, setPage, writeParams, applyFilters, clearFilters } =
@@ -342,10 +343,7 @@ export default function Students() {
             buildParams(1, filters)
           );
 
-        const {
-          total: newTotal,
-          total_pages: newTotalPages,
-        } = countResponse.data;
+        const { total_pages: newTotalPages } = countResponse.data;
 
         const targetPage = Math.min(
           page,
@@ -441,15 +439,7 @@ export default function Students() {
     <div className="space-y-2">
 
       {/* Toast */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() =>
-            setToast(null)
-          }
-        />
-      )}
+      {toastElement}
 
       {/* Filters */}
       <StudentFilters
@@ -555,113 +545,15 @@ export default function Students() {
       )}
 
       {/* Delete Confirmation Modal */}
-      {showBulkDeleteConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4">
-
-          <div
-            className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
-
-            {/* Modal Header */}
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 sm:px-6 py-4">
-
-              <h3
-                className="text-base font-semibold text-slate-800"
-                style={{
-                  fontFamily:
-                    "'Sora', sans-serif",
-                }}
-              >
-                {studentToDelete
-                  ? "Delete Student?"
-                  : `Delete ${selectedCount} ${selectedCount === 1
-                    ? "Student"
-                    : "Students"
-                  }?`}
-              </h3>
-
-              <button
-                onClick={
-                  handleCloseDeleteConfirm
-                }
-                disabled={
-                  bulkDeleting ||
-                  deletingStudent
-                }
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="px-4 sm:px-6 py-5">
-
-              <div className="flex items-start gap-3">
-
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
-                  <Trash2
-                    size={18}
-                    className="text-danger"
-                  />
-                </div>
-
-                <div className="min-w-0">
-
-                  <p className="text-sm font-medium text-slate-700 break-words">
-                    {studentToDelete
-                      ? `Are you sure you want to delete ${studentToDelete.full_name}?`
-                      : "Are you sure you want to delete the selected students?"}
-                  </p>
-
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 border-t border-slate-100 px-4 sm:px-6 py-4">
-
-              <button
-                onClick={
-                  handleCloseDeleteConfirm
-                }
-                disabled={
-                  bulkDeleting ||
-                  deletingStudent
-                }
-                className="btn-outline w-full sm:w-auto rounded-xl px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={
-                  studentToDelete
-                    ? handleConfirmDeleteStudent
-                    : handleConfirmBulkDelete
-                }
-                disabled={
-                  bulkDeleting ||
-                  deletingStudent
-                }
-                className="w-full sm:w-auto rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {studentToDelete
-                  ? deletingStudent
-                    ? "Deleting..."
-                    : "Delete Student"
-                  : bulkDeleting
-                    ? "Deleting..."
-                    : "Delete Students"}
-              </button>
-
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteModal
+        open={showBulkDeleteConfirm}
+        title={studentToDelete ? "Delete Student?" : `Delete ${selectedCount} ${selectedCount === 1 ? "Student" : "Students"}?`}
+        message={studentToDelete ? `Are you sure you want to delete ${studentToDelete.full_name}?` : "Are you sure you want to delete the selected students?"}
+        confirmLabel={studentToDelete ? "Delete Student" : "Delete Students"}
+        loading={bulkDeleting || deletingStudent}
+        onCancel={handleCloseDeleteConfirm}
+        onConfirm={studentToDelete ? handleConfirmDeleteStudent : handleConfirmBulkDelete}
+      />
     </div>
   );
 }

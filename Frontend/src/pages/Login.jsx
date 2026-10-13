@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import racLogo from "../assets/RAC.png";
 import { useAuth } from "../context/AuthContext";
-import Toast from "../components/ui/Toast";
+import useToast from "../hooks/useToast";
+import { LABEL_CLASS } from "../components/common/FormField";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -19,11 +20,10 @@ const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
 
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
-    const [toast, setToast] = useState(null);
+    const { setToast, toastElement } = useToast();
 
     const validateForm = () => {
         const newErrors = {};
@@ -85,13 +85,7 @@ const Login = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 px-3 py-6 sm:px-4">
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
+            {toastElement}
 
             <div className="w-full max-w-md bg-white rounded-lg shadow-md p-5 sm:p-8">
 
@@ -136,7 +130,7 @@ const Login = () => {
 
                     {/* Email */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className={LABEL_CLASS}>
                             Email
                         </label>
 
@@ -145,14 +139,11 @@ const Login = () => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter your email"
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email
-                                ? "border-red-500"
-                                : "border-gray-300"
-                                }`}
+                            className={`form-control ${errors.email ? "border-red-500 hover:border-red-500 focus:border-red-500 focus:ring-red-100" : ""}`}
                         />
 
                         {errors.email && (
-                            <p className="text-red-500 text-sm mt-1">
+                            <p className="mt-2 text-[13px] font-medium text-red-600">
                                 {errors.email}
                             </p>
                         )}
@@ -160,7 +151,7 @@ const Login = () => {
 
                     {/* Password */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className={LABEL_CLASS}>
                             Password
                         </label>
 
@@ -170,10 +161,7 @@ const Login = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="Enter your password"
-                                className={`w-full px-3 py-2 pr-16 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.password
-                                    ? "border-red-500"
-                                    : "border-gray-300"
-                                    }`}
+                                className={`form-control pr-16 ${errors.password ? "border-red-500 hover:border-red-500 focus:border-red-500 focus:ring-red-100" : ""}`}
                             />
 
                             <button
@@ -181,14 +169,14 @@ const Login = () => {
                                 onClick={() =>
                                     setShowPassword(!showPassword)
                                 }
-                                className="absolute right-3 top-2 text-sm text-gray-600 hover:text-gray-800"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-600 hover:text-slate-900"
                             >
                                 {showPassword ? "Hide" : "Show"}
                             </button>
                         </div>
 
                         {errors.password && (
-                            <p className="text-red-500 text-sm mt-1">
+                            <p className="mt-2 text-[13px] font-medium text-red-600">
                                 {errors.password}
                             </p>
                         )}

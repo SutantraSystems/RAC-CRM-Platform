@@ -1,10 +1,16 @@
+import {
+  UserX, ThumbsUp, HelpCircle, ListChecks, FileText, Send, Wallet, BadgeCheck,
+  CalendarClock, Star, PhoneOff, PhoneMissed, CheckCircle2, Clock, CircleDollarSign,
+  Hourglass, AlarmClock, AlertTriangle,
+} from "lucide-react";
+
 // Rows shown per page in every list.
 export const PAGE_SIZE = 25;
 
 // Shown in front of amounts. Set to "" to show plain numbers.
 export const CURRENCY_SYMBOL = "₹";
 
-export const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_YEAR = new Date().getFullYear();
 
 // Payment dropdown options (values match the Django model choices)
 export const INTAKE_OPTIONS = [
@@ -130,4 +136,75 @@ export const getFieldErrors = (data) => {
     if (typeof value === "string") errors[key] = value;
   });
   return errors;
+};
+
+// Reminder History filters
+export const DATE_RANGE_OPTIONS = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "week", label: "1 Week" },
+];
+
+export const REMINDER_STATUS_OPTIONS = [
+  { value: "upcoming", label: "Upcoming" },
+  { value: "due", label: "Due" },
+  { value: "overdue", label: "Overdue" },
+  { value: "completed", label: "Completed" },
+];
+
+// Badge colours for every Status column (see ui/StatusBadge).
+export const STUDENT_STATUS_TONES = {
+  not_interested: "red",
+  interested: "lime",
+  not_sure: "slate",
+  shortlisting_done: "sky",
+  docs_shared: "indigo",
+  applied: "violet",
+  deposit_paid: "teal",
+  visa_granted: "green",
+  future_intake: "amber",
+  prm_prospect: "fuchsia",
+  no_response: "orange",
+  invalid_number: "rose",
+};
+
+export const PAYMENT_STATUS_TONES = {
+  payment_done: "green",
+  payment_pending: "amber",
+  half_payment_done: "blue",
+};
+
+export const REMINDER_STATUS_TONES = {
+  upcoming: "blue",
+  due: "amber",
+  overdue: "red",
+  completed: "green",
+};
+
+export const STUDENT_STATUS_ICONS = {
+  not_interested: UserX,
+  interested: ThumbsUp,
+  not_sure: HelpCircle,
+  shortlisting_done: ListChecks,
+  docs_shared: FileText,
+  applied: Send,
+  deposit_paid: Wallet,
+  visa_granted: BadgeCheck,
+  future_intake: CalendarClock,
+  prm_prospect: Star,
+  no_response: PhoneOff,
+  invalid_number: PhoneMissed,
+};
+
+export const PAYMENT_STATUS_ICONS = {
+  payment_done: CheckCircle2,
+  payment_pending: Clock,
+  half_payment_done: CircleDollarSign,
+};
+
+export const REMINDER_STATUS_ICONS = {
+  upcoming: Hourglass,
+  due: AlarmClock,
+  overdue: AlertTriangle,
+  completed: CheckCircle2,
 };

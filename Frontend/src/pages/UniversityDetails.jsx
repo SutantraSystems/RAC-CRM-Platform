@@ -25,10 +25,10 @@ export default function UniversityDetails() {
     <ModuleDetailsPage
       api={universityApi}
       basePath="/universities"
-      singular="University"
-      plural="Universities"
-      getTitle={(item) => item.name || "Unnamed University"}
-      getName={(item) => item.name || "this university"}
+      singular="Contact"
+      plural="Contacts"
+      getTitle={(item) => item.name || "Unnamed Contact"}
+      getName={(item) => item.name || "this contact"}
       renderOverview={renderOverview}
       FormComponent={UniversityForm}
     />

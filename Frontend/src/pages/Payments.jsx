@@ -1,12 +1,14 @@
 import React from "react";
 import ModuleListPage from "../components/common/ModuleListPage";
 import PaymentForm from "../components/forms/PaymentForm";
+import StatusBadge from "../components/ui/StatusBadge";
 import { paymentApi } from "../services/paymentApi";
 import {
   INTAKE_OPTIONS,
   PAYMENT_TYPE_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
   PAYMENT_CATEGORY_OPTIONS,
+  PAYMENT_STATUS_TONES,
   formatAmount,
   getOptionLabel,
 } from "../config/crmConfig";
@@ -36,9 +38,10 @@ const COLUMNS = [
     key: "status",
     label: "Status",
     render: (row) => (
-      <span className="text-sm font-medium text-slate-700">
-        {getOptionLabel(PAYMENT_STATUS_OPTIONS, row.status)}
-      </span>
+      <StatusBadge
+        label={getOptionLabel(PAYMENT_STATUS_OPTIONS, row.status)}
+        tone={PAYMENT_STATUS_TONES[row.status]}
+      />
     ),
   },
   { key: "category", label: "Category", render: (row) => getOptionLabel(PAYMENT_CATEGORY_OPTIONS, row.category) },

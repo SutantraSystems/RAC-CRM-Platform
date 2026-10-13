@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { ArrowLeft, Edit2, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import {
   getStudentById,
   updateStudentStatus,
@@ -8,12 +8,15 @@ import {
   deleteStudent,
 } from "../services/studentApi";
 import StudentForm from "../components/forms/StudentForm";
+import FormModal from "../components/common/FormModal";
 import { getStatusLabel } from "../data/students";
-import Toast from "../components/ui/Toast";
 import OverviewTab from "../components/studentDetails/OverviewTab";
 import DocumentsTab from "../components/studentDetails/DocumentsTab";
 import CommentsTab from "../components/studentDetails/CommentsTab";
 import RemindersTab from "../components/studentDetails/RemindersTab";
+import ConfirmDeleteModal from "../components/common/ConfirmDeleteModal";
+import RecordActions from "../components/common/RecordActions";
+import useToast from "../hooks/useToast";
 
 const TABS = ["Overview", "Documents", "Comments", "Reminders"];
 
@@ -22,12 +25,16 @@ export default function StudentDetails() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // The Students list URL (with ?page=&country=...) this page was opened from. Missing when the page is opened directly, in which case plain /students.
+  // The list URL (with ?page=&filters...) this page was opened from: Students or Reminder History. Missing when opened directly, in which case plain /students.
   const fromList =
     typeof location.state?.from === "string" &&
-    location.state.from.startsWith("/students")
+    (location.state.from.startsWith("/students") ||
+      location.state.from.startsWith("/reminder-history"))
       ? location.state.from
       : "/students";
+  const backLabel = fromList.startsWith("/reminder-history")
+    ? "Back to Reminder History"
+    : "Back to Students";
 
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +48,7 @@ export default function StudentDetails() {
       replace: true,
       state: location.state,
     });
-  const [toast, setToast] = useState(null);
+  const { setToast, toastElement } = useToast();
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -146,7 +153,7 @@ export default function StudentDetails() {
       <div className="text-center py-20">
         <p className="text-slate-500 mb-4">{error || "Student not found."}</p>
         <button onClick={() => navigate(fromList)} className="btn-outline">
-          Back to Students
+          {backLabel}
         </button>
       </div>
     );
@@ -154,20 +161,14 @@ export default function StudentDetails() {
 
   return (
     <div className="space-y-4 min-w-0">
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toastElement}
 
       <button
         onClick={() => navigate(fromList)}
         className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700"
       >
         <ArrowLeft size={15} />
-        Back to Students
+        {backLabel}
       </button>
 
       <div className="pt-2 pb-1 min-w-0">
@@ -201,26 +202,11 @@ export default function StudentDetails() {
           ))}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowEdit(true)}
-              title="Edit Student"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
-            >
-              <Edit2 size={14} />
-              <span className="hidden sm:inline">Edit</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowDelete(true)}
-              title="Delete Student"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-50 text-danger hover:bg-red-100 transition-colors"
-            >
-              <Trash2 size={14} />
-              <span className="hidden sm:inline">Delete</span>
-            </button>
-          </div>
+          <RecordActions
+            singular="Student"
+            onEdit={() => setShowEdit(true)}
+            onDelete={() => setShowDelete(true)}
+          />
         </div>
 
         <div className="p-3 sm:p-5">
@@ -238,68 +224,24 @@ export default function StudentDetails() {
       </div>
 
       {showEdit && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-2xl shadow-card-hover w-full max-w-xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center gap-2 px-4 sm:px-5 py-3 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
-              <h2 className="text-base font-semibold text-slate-800">Edit Student</h2>
-              <button
-                onClick={() => setShowEdit(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors text-lg leading-none"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-3 sm:p-4">
-              <StudentForm
-                initialData={student}
-                onSubmit={handleSaveEdit}
-                onCancel={() => setShowEdit(false)}
-              />
-            </div>
-          </div>
-        </div>
+        <FormModal title="Edit Student" onClose={() => setShowEdit(false)}>
+          <StudentForm
+            initialData={student}
+            onSubmit={handleSaveEdit}
+            onCancel={() => setShowEdit(false)}
+          />
+        </FormModal>
       )}
 
-      {showDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 sm:px-6 py-4">
-              <h3 className="text-base font-semibold text-slate-800">Delete Student?</h3>
-              <button
-                onClick={() => !deleting && setShowDelete(false)}
-                disabled={deleting}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="px-4 sm:px-6 py-5 flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50">
-                <Trash2 size={18} className="text-danger" />
-              </div>
-              <p className="text-sm font-medium text-slate-700 break-words">
-                Are you sure you want to delete {student.full_name || "this student"}?
-              </p>
-            </div>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 border-t border-slate-100 px-4 sm:px-6 py-4">
-              <button
-                onClick={() => setShowDelete(false)}
-                disabled={deleting}
-                className="btn-outline w-full sm:w-auto rounded-xl px-4 py-2 text-sm disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={deleting}
-                className="w-full sm:w-auto rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
-              >
-                {deleting ? "Deleting..." : "Delete Student"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteModal
+        open={showDelete}
+        title={"Delete Student?"}
+        message={`Are you sure you want to delete ${student.full_name || "this student"}?`}
+        confirmLabel={"Delete Student"}
+        loading={deleting}
+        onCancel={() => setShowDelete(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard, Users, Target, FileText, GraduationCap,
-  DollarSign, BarChart3, Settings, ChevronDown, ChevronRight,
-  BookOpen, Search, Briefcase, Handshake, TestTube2,
-  Building2, CreditCard
-} from 'lucide-react';
+import { LayoutDashboard, Users, FileText, BookUser, CreditCard, History } from 'lucide-react';
 import logo from '../../assets/RAC.png';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Students', path: '/students' },
   { icon: FileText, label: 'Import Students', path: '/importstudents' },
-  { icon: Building2, label: 'Universities', path: '/universities' },
+  { icon: BookUser, label: 'Contact List', path: '/universities' },
   { icon: CreditCard, label: 'Payment', path: '/payments' },
+  { icon: History, label: 'Reminder History', path: '/reminder-history' },
 
 ];
 

@@ -1,12 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Bell,
-  Calendar,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-} from "lucide-react";
+import { Bell, CheckCircle2 } from "lucide-react";
 
 import { getReminderNotifications } from "../../services/studentDetailsApi";
 
@@ -124,156 +118,67 @@ export default function NotificationBell() {
 
       {/* Dropdown */}
       {open && (
-        <div className="fixed left-3 right-3 top-[4.25rem] z-50 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-14 sm:w-[420px] sm:max-w-[calc(100vw-24px)]">
+        <div className="fixed left-3 right-3 top-[4.25rem] z-50 flex max-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card-hover sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[360px] sm:max-w-[calc(100vw-24px)]">
           {/* Header */}
-          <div className="border-b border-slate-100 bg-white px-4 py-3 sm:px-5 sm:py-4">
-            <div className="flex items-center justify-between gap-3 sm:gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
-                  <Bell size={19} strokeWidth={2} />
-                </div>
+          <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-3">
+            <p className="text-sm font-bold text-slate-800">Reminders</p>
 
-                <div>
-                  <p className="text-base font-semibold text-slate-800">
-                    Reminders
-                  </p>
-
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    Due and overdue reminders
-                  </p>
-                </div>
-              </div>
-
-              {count > 0 && (
-                <span className="shrink-0 rounded-full bg-red-50 px-3 py-1.5 text-[11px] font-semibold text-danger">
-                  {count} need{count === 1 ? "s" : ""} attention
-                </span>
-              )}
-            </div>
+            {count > 0 && (
+              <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-600">
+                {count}
+              </span>
+            )}
           </div>
 
-          {/* Reminder List */}
-          <div className="max-h-[60vh] sm:max-h-[480px] overflow-y-auto">
-            {/* Loading */}
+          {/* List */}
+          <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-2.5 pb-2.5">
             {!loaded ? (
-              <div className="px-5 py-14 text-center">
-                <div className="mx-auto mb-3 h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-primary-600" />
-
-                <p className="text-sm text-slate-500">
-                  Loading reminders...
-                </p>
+              <div className="py-8 text-center">
+                <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-primary-600" />
               </div>
             ) : count === 0 ? (
-              /* Empty */
-              <div className="flex flex-col items-center px-6 py-14 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <CheckCircle2 size={25} strokeWidth={2} />
-                </div>
-
-                <p className="mt-4 text-base font-semibold text-slate-700">
-                  You're all caught up
-                </p>
-
-                <p className="mt-1.5 max-w-[280px] text-sm leading-6 text-slate-400">
-                  There are no due or overdue reminders right now.
-                </p>
+              <div className="flex flex-col items-center py-8 text-center">
+                <CheckCircle2 size={22} className="text-emerald-500" />
+                <p className="mt-2 text-sm font-semibold text-slate-700">All caught up</p>
+                <p className="text-xs text-slate-400">No due or overdue reminders.</p>
               </div>
             ) : (
-              /* Items */
               items.map((item) => {
-                const meta =
-                  STATUS_META[item.status] || STATUS_META.due;
-
+                const meta = STATUS_META[item.status] || STATUS_META.due;
                 const isOverdue = item.status === "overdue";
 
                 return (
-                  <div
+                  <button
                     key={item.id}
-                    className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4 transition-colors duration-150 last:border-0 hover:bg-slate-50"
+                    type="button"
+                    onClick={() => viewStudent(item)}
+                    className="group relative block w-full overflow-hidden rounded-xl bg-slate-50 py-2 pl-4 pr-3 text-left transition-colors hover:bg-primary-50"
                   >
-                    <div className="flex items-start gap-3.5">
-                      {/* Reminder Icon */}
-                      <div
-                        className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                          isOverdue
-                            ? "bg-red-50 text-red-600"
-                            : "bg-amber-50 text-amber-600"
-                        }`}
-                      >
-                        {isOverdue ? (
-                          <AlertTriangle
-                            size={18}
-                            strokeWidth={2}
-                          />
-                        ) : (
-                          <Clock size={18} strokeWidth={2} />
-                        )}
-                      </div>
+                    {/* Status accent bar */}
+                    <span
+                      className={`absolute inset-y-0 left-0 w-1 ${isOverdue ? "bg-danger" : "bg-amber-400"}`}
+                    />
 
-                      {/* Content */}
-                      <div className="min-w-0 flex-1">
-                        {/* Student + Status */}
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="min-w-0 truncate text-sm font-semibold text-slate-800">
-                            {item.student_name}
-                          </p>
-
-                          <span
-                            className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${meta.badge}`}
-                          >
-                            {meta.label}
-                          </span>
-                        </div>
-
-                        {/* Reminder title */}
-                        <p className="mt-2 text-sm font-medium leading-5 text-slate-700 break-words">
-                          {item.title}
-                        </p>
-
-                        {/* Date / Time */}
-                        <div className="mt-2 flex items-center gap-2 text-xs text-slate-400">
-                          <Calendar
-                            size={14}
-                            strokeWidth={1.8}
-                            className="shrink-0"
-                          />
-
-                          <span>
-                            {formatDateTime(item.remind_at)}
-                          </span>
-                        </div>
-
-                        {/* Notes */}
-                        {item.notes && (
-                          <p className="mt-2 line-clamp-2 break-words text-xs leading-5 text-slate-500">
-                            {item.notes}
-                          </p>
-                        )}
-
-                        {/* View Student */}
-                        <button
-                          type="button"
-                          onClick={() => viewStudent(item)}
-                          className="mt-3 text-xs font-semibold text-primary-600 transition-colors hover:text-primary-700 hover:underline"
-                        >
-                          View Student →
-                        </button>
-                      </div>
+                    {/* Line 1: student (left) / status (right) */}
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="min-w-0 truncate text-[13px] font-bold text-slate-800">{item.student_name}</p>
+                      <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${meta.badge}`}>
+                        {meta.label}
+                      </span>
                     </div>
-                  </div>
+
+                    {/* Line 2: title (left) / timestamp (right) */}
+                    <div className="mt-0.5 flex items-center justify-between gap-3">
+                      <p title={item.title} className="min-w-0 flex-1 truncate text-xs font-medium leading-snug text-slate-600">{item.title}</p>
+                      <span className="shrink-0 whitespace-nowrap text-[11px] font-semibold leading-snug text-slate-700">
+                        {formatDateTime(item.remind_at)}
+                      </span>
+                    </div>
+                  </button>
                 );
               })
             )}
           </div>
-
-          {/* Footer */}
-          {count > 0 && (
-            <div className="border-t border-slate-100 bg-slate-50 px-4 sm:px-5 py-3">
-              <p className="text-center text-xs text-slate-400">
-                Reminders refresh automatically every minute
-              </p>
-            </div>
-          )}
         </div>
       )}
     </div>
