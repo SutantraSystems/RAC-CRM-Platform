@@ -14,6 +14,7 @@ export default function DataTable({
   addLabel = "Add",
   columns = [],
   data = [],
+  loading = false, // true while the list is being fetched
   page = 1,
   total = 0,
   totalPages = 1,
@@ -28,6 +29,8 @@ export default function DataTable({
   selectedIds, // pass a Set (with the two handlers) to show row checkboxes
   onToggleSelect,
   onToggleSelectAll,
+  getRowLabel, // optional (row) => text used in the row checkbox aria-label
+  emptyLabel, // optional text for the empty state (default: "No <itemLabel> found")
 }) {
   const selectable = Boolean(selectedIds);
   const headerCheckboxRef = useRef(null);
@@ -96,6 +99,7 @@ export default function DataTable({
                     type="checkbox"
                     checked={allOnPageSelected}
                     onChange={(e) => onToggleSelectAll?.(e.target.checked)}
+                    aria-label={`Select all ${itemLabel} on this page`}
                     className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                   />
                 </th>
@@ -121,11 +125,11 @@ export default function DataTable({
                   colSpan={columns.length + 1 + (selectable ? 1 : 0)}
                   className="text-center py-10 text-slate-400 bg-white rounded-xl"
                 >
-                  No {itemLabel} found
+                  {loading ? `Loading ${itemLabel}...` : emptyLabel || `No ${itemLabel} found`}
                 </td>
               </tr>
             ) : (
-              data.map((row) => (
+              data.map((row, rowIndex) => (
                 <tr
                   key={row.id}
                   onClick={() => onRowClick?.(row)}
@@ -137,6 +141,7 @@ export default function DataTable({
                         type="checkbox"
                         checked={selectedIds.has(row.id)}
                         onChange={() => onToggleSelect?.(row.id)}
+                        aria-label={`Select ${getRowLabel?.(row) || `row ${(page - 1) * pageSize + rowIndex + 1}`}`}
                         className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                       />
                     </td>
@@ -144,7 +149,7 @@ export default function DataTable({
                   {columns.map((column, index) => (
                     <td
                       key={column.key}
-                      className={`px-4 py-1.5 text-slate-700 ${
+                      className={`${column.cellClassName || "px-4 py-1.5 text-slate-700"} ${
                         column.wrap ? `whitespace-normal py-2 ${column.widthClass || ""}` : "whitespace-nowrap"
                       } ${index === 0 && !selectable ? "rounded-l-xl text-slate-800" : ""}`}
                     >

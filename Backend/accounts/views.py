@@ -23,7 +23,6 @@ def user_payload(user, request=None):
         "short_name": get_display_name(user),
     }
     if request is not None:
-        # Seconds until the fixed login timeout.
         payload["session_expires_in"] = seconds_remaining(request)
     return payload
 

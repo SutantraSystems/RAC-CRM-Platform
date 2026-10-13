@@ -284,7 +284,6 @@ class UploadStudentsAPIView(APIView):
             total_errors = []
             duplicate_rows = []
 
-            # Existing database contacts
             contact_index = ContactIndex.from_queryset(
                 RACStudent.objects.all()
             )
@@ -480,13 +479,10 @@ class UploadStudentsAPIView(APIView):
 
                             "created_by": request.user.email,
 
-                            # Store original Excel file name
                             "source_file": file.name,
 
-                            # Store location from Excel
                             "location": location,
 
-                            # Default imported student status
                             "status": RACStudent.STATUS_NOT_SURE,
                         }
 
@@ -579,7 +575,6 @@ class UploadStudentsAPIView(APIView):
                         to_insert
                     )
 
-                # Add validation errors
                 total_errors.extend(
                     errors
                 )
@@ -860,7 +855,6 @@ def reminder_notifications(request):
     return Response({"count": len(data), "results": data})
 
 # Reminder History: every reminder across all students, newest first, with filters.
-# Dates are matched against remind_at on India (IST) calendar days, same as the UI.
 IST = dt_timezone(timedelta(hours=5, minutes=30))
 
 

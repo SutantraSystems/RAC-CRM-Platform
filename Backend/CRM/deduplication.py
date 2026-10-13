@@ -35,7 +35,7 @@ def normalize_for_comparison(value):
         return value
 
     if isinstance(value, float):
-        if value != value:  # NaN
+        if value != value:  
             return None
         if value.is_integer():
             return str(int(value))
@@ -83,7 +83,7 @@ class ContactIndex:
 
     def __init__(self):
         self.emails = set()
-        self.mobiles = {}  # normalized number -> owner's name
+        self.mobiles = {} 
 
     @classmethod
     def from_queryset(cls, queryset):
@@ -119,7 +119,7 @@ class ContactIndex:
         return conflicts
 
 
-MOBILE_NUMBER_MAX_LENGTH = 15  # same limit as RACStudent.mobile_number
+MOBILE_NUMBER_MAX_LENGTH = 15  
 _MOBILE_SEPARATORS = re.compile(r"[,;\r\n]+")
 
 def split_mobile_numbers(value):
@@ -154,7 +154,7 @@ def parse_mobile_numbers(mobile_value, alternate_value=None):
     errors = {}
     repeated = []
     seen = set()
-    numbers = []  # (source field, number), in order
+    numbers = []  
 
     for field, raw in (
         ("mobile_number", mobile_value),

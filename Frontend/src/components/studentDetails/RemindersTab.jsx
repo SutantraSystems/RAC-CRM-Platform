@@ -25,7 +25,7 @@ import {
   deleteStudentReminder,
 } from "../../services/studentDetailsApi";
 
-import ReminderFormModal from "../ui/ReminderFormModal";
+import ReminderFormModal from "../forms/ReminderFormModal";
 import ConfirmDeleteModal from "../common/ConfirmDeleteModal";
 
 import {

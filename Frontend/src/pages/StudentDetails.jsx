@@ -32,6 +32,9 @@ export default function StudentDetails() {
       location.state.from.startsWith("/reminder-history"))
       ? location.state.from
       : "/students";
+  const listState = location.state?.dashboardFilters
+    ? { dashboardFilters: location.state.dashboardFilters }
+    : undefined;
   const backLabel = fromList.startsWith("/reminder-history")
     ? "Back to Reminder History"
     : "Back to Students";
@@ -89,7 +92,7 @@ export default function StudentDetails() {
     try {
       setDeleting(true);
       await deleteStudent(student.id);
-      navigate(fromList);
+      navigate(fromList, { state: listState });
     } catch (err) {
       console.error("Delete failed:", err);
       setToast({
@@ -152,7 +155,7 @@ export default function StudentDetails() {
     return (
       <div className="text-center py-20">
         <p className="text-slate-500 mb-4">{error || "Student not found."}</p>
-        <button onClick={() => navigate(fromList)} className="btn-outline">
+        <button onClick={() => navigate(fromList, { state: listState })} className="btn-outline">
           {backLabel}
         </button>
       </div>
@@ -164,7 +167,7 @@ export default function StudentDetails() {
       {toastElement}
 
       <button
-        onClick={() => navigate(fromList)}
+        onClick={() => navigate(fromList, { state: listState })}
         className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700"
       >
         <ArrowLeft size={15} />

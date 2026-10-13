@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 
 export default function useListQuery(filterKeys, numericKeys = []) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
   const pageParam = parseInt(searchParams.get("page"), 10);
   const page = pageParam > 0 ? pageParam : 1;
@@ -34,7 +35,7 @@ export default function useListQuery(filterKeys, numericKeys = []) {
       }
     });
 
-    setSearchParams(params, { replace: true });
+    setSearchParams(params, { replace: true, state: location.state });
   };
 
   const setPage = (next) => {
